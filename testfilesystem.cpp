@@ -19,9 +19,8 @@
  * 不要自行进行类似的delete[] b操作，内存的申请和释放都在BufPageManager中做好
  * 如果自行进行类似free(b)或者delete[] b的操作，可能会导致严重错误
  */
-#include "bufmanager/BufPageManager.h"
-#include "fileio/FileManager.h"
-#include "utils/pagedef.h"
+
+#include "fs.h"
 #include <iostream>
 
 using namespace std;
@@ -35,7 +34,7 @@ int main() {
 	int fileID, f2;
 	fm->openFile("testfile.txt", fileID); //打开文件，fileID是返回的文件id
         fm->openFile("testfile2.txt", f2);
-	for (int pageID = 0; pageID < 1000; ++ pageID) {
+	for (int pageID = 0; pageID < 10; ++ pageID) {
 		int index;
 		//为pageID获取一个缓存页
 		BufType b = bpm->allocPage(fileID, pageID, index, false);
@@ -51,7 +50,7 @@ int main() {
 		b[1] = f2;
 		bpm->markDirty(index);
 	}
-	for (int pageID = 0; pageID < 1000; ++ pageID) {
+	for (int pageID = 0; pageID < 10; ++ pageID) {
 		int index;
 		//为pageID获取一个缓存页
 		BufType b = bpm->getPage(fileID, pageID, index);
@@ -63,6 +62,11 @@ int main() {
 		cout << b[0] << ":" << b[1] << endl;
 		bpm->access(index);
 	}
+
+    bpm->close();
+
+    fm->closeFile(fileID);
+    fm->closeFile(f2);
 	//程序结束前可以调用BufPageManager的某个函数将缓存中的内容写回
 	//具体的函数大家可以看看ppt或者程序的注释
 	return 0;
