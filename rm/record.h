@@ -1,33 +1,38 @@
 #include "unistd.h"
-#include "memory"
+#include <cstring>
 
 class Record {
     int size;
-    int rid;
-    char *data;
-
+    int pageID, slotID;
+    unsigned int *data;
+public:
     Record() {
         this->size = 0;
-        this->rid = -1;
+        this->pageID = -1;
+        this->slotID = -1;
         this->data = nullptr;
     }
 
     ~Record() {}
 
-    void setRecord(int size, int rid, char *pdata) {
+    void setRecord(int size, int pageID, int slotID, unsigned int *pdata) {
         if(this->data) {
             delete [] this->data;
         }
 
-        this->data = new char [size];
+        this->data = new unsigned int [size];
         this->size = size;
-        this->rid = rid;
+        this->pageID = pageID;
+        this->slotID = slotID;
 
         memcpy(this->data, pdata, size);
     }
 
-    char* getData() { return this->data; }
-    int getRid() { return this->rid; }
+    unsigned int* getData() { return this->data; }
+    void getPageSlotID(int &ret_pageID, int &ret_slotID) { 
+        ret_pageID = this->pageID;
+        ret_slotID = this->slotID;
+    }
 
 
 };
