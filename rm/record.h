@@ -2,15 +2,31 @@
 #include <cstring>
 #include <cstdio>
 
+
+struct RID {
+    int pageID;
+    int slotID;
+    RID() {
+        pageID = -1;
+        slotID = -1;
+    }
+
+    void set(int p, int s) {
+        pageID = p;
+        slotID = s;
+    }
+
+};
+
+
+
 class Record {
     int size;
-    int pageID, slotID;
+    RID rid;
     unsigned int *data;
 public:
     Record() {
         this->size = 0;
-        this->pageID = -1;
-        this->slotID = -1;
         this->data = nullptr;
     }
 
@@ -23,16 +39,14 @@ public:
 
         this->data = new unsigned int [size];
         this->size = size;
-        this->pageID = pageID;
-        this->slotID = slotID;
+        this->rid.set(pageID, slotID);
 
         memcpy(this->data, pdata, size * sizeof(uint));
     }
 
-    unsigned int* getData() { return this->data; }
-    void getPageSlotID(int &ret_pageID, int &ret_slotID) { 
-        ret_pageID = this->pageID;
-        ret_slotID = this->slotID;
+    void getData(unsigned int *ret) { ret = this->data; }
+    RID getRID() { 
+        return this->rid;
     }
 
     void display() {

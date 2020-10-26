@@ -1,6 +1,6 @@
 #include "../filesystem/fs.h"
 #include "record.h"
-#include "rm_internal.h"
+#include "utils.h"
 
 
 
@@ -12,6 +12,7 @@ class RM_FileHandle {
     RM_FileConfig fileConfig;
 
     public:
+
     RM_FileHandle(FileManager *fm, BufPageManager *bpm, int fileID) {
         this->fileID = fileID;
         this->fm = fm;
@@ -26,11 +27,18 @@ class RM_FileHandle {
 
     ~RM_FileHandle() {}
 
+    void debug() {
+        printf("debug %d %d \n", fileConfig.curFreePage, fileConfig.curPageNum);
+    }
+
     int recordOff(int slotID) {
         return fileConfig.pageConfigSize + fileConfig.bitmapSize + slotID * fileConfig.recordSize;
     }
 
-    bool getRecord(int pageID, int slotID, Record &record) {
+    bool getRecord(RID rid, Record &record) {
+        int pageID = rid.pageID;
+        int slotID = rid.slotID;
+        
         int index;
         BufType buf = bpm->getPage(this->fileID, pageID, index);
         bpm->access(index);
@@ -39,15 +47,14 @@ class RM_FileHandle {
         unsigned int *bitmap = buf + fileConfig.pageConfigSize;
         if(!getBitFromLeft(bitmap, slotID, fileConfig.maxPageRecordNum)) return false;
 
-        puts("succ");
         unsigned int *pdata = buf + recordOff(slotID);
-        printf("pp %d %d \n", *pdata, *(pdata + 1));
+        // printf("pp %d %d \n", *pdata, *(pdata + 1));
         record.setRecord(fileConfig.recordSize, pageID, slotID, pdata);
         
         return true;
     }
 
-    bool insertRecord(const unsigned int *pdata, int &pageID, int &slotID) {
+    bool insertRecord(const unsigned int *pdata, RID &rid) {
         updateFreePage(fileConfig.curFreePage);
 
         int index;
@@ -68,8 +75,9 @@ class RM_FileHandle {
         setBitFromLeft(bitmap, freeSlotID, fileConfig.maxPageRecordNum, 1);
         bpm->markDirty(index);
 
-        pageID = fileConfig.curFreePage;
-        slotID = freeSlotID;
+        int pageID = fileConfig.curFreePage;
+        int slotID = freeSlotID;
+        rid.set(pageID, slotID);
 
         if(curRecordNum >= fileConfig.maxPageRecordNum) {
            updateFreePage(buf[1]);  
@@ -77,7 +85,9 @@ class RM_FileHandle {
         return true;
     }
 
-    bool deleteRecord(int pageID, int slotID) {
+    bool deleteRecord(RID rid) {
+        int pageID = rid.pageID;
+        int slotID = rid.slotID;
         int index;
         BufType buf = bpm->getPage(fileID, pageID, index);
         unsigned int &curRecordNum = buf[0];
@@ -93,11 +103,18 @@ class RM_FileHandle {
             buf[1] = fileConfig.curFreePage;
             updateFreePage(pageID);
         }
+        if(curRecordNum == 0) {
+            fileConfig.curPageNum -= 1;
+            updateFileConfig();
+        }
         bpm->markDirty(index);
         return true;
     }
 
-    bool updateRecord(const unsigned int *pdata, int pageID, int slotID) {
+    bool updateRecord(const unsigned int *pdata, RID rid) {
+        int pageID = rid.pageID;
+        int slotID = rid.slotID;
+
         int index;
         BufType buf = bpm->getPage(fileID, pageID, index);
         unsigned int* bitmap = buf + fileConfig.pageConfigSize;
@@ -121,19 +138,14 @@ class RM_FileHandle {
             bpm->markDirty(index);
         }
         
+        updateFileConfig();
+    }
+
+    void updateFileConfig() {
         int index;
         BufType buf = bpm->getPage(fileID, 0, index);
         memcpy(buf, &(fileConfig), sizeof(RM_FileConfig));
         bpm->markDirty(index);
-    }
-
-    void checkNewPage() {
-        if(fileConfig.curFreePage >= fileConfig.curPageNum) {
-            int index;
-            BufType newPage = bpm->getPage(fileID, fileConfig.curPageNum, index);
-            memset(newPage, 0, PAGE_SIZE);
-            newPage[1] = ++fileConfig.curPageNum;
-        }
     }
 
 
