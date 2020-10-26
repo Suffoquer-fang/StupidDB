@@ -1,5 +1,6 @@
 #include "unistd.h"
 #include <cstring>
+#include <cstdio>
 
 class Record {
     int size;
@@ -25,7 +26,7 @@ public:
         this->pageID = pageID;
         this->slotID = slotID;
 
-        memcpy(this->data, pdata, size);
+        memcpy(this->data, pdata, size * sizeof(uint));
     }
 
     unsigned int* getData() { return this->data; }
@@ -34,5 +35,10 @@ public:
         ret_slotID = this->slotID;
     }
 
+    void display() {
+        for(int i = 0; i < size; ++i)
+            printf("%d ", *(data + i));
+        puts(" ");
+    }
 
 };

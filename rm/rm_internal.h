@@ -1,3 +1,14 @@
+#ifndef INTERNAL
+#define INTERNAL
+
+#include "../filesystem/fs.h"
+
+
+struct RM_PageConfig {
+    int curRecordNum;
+    int nextFreePage;
+};
+
 
 struct RM_FileConfig {
     int recordSize;
@@ -5,12 +16,22 @@ struct RM_FileConfig {
     int maxPageRecordNum;
     int curPageNum;
     int pageConfigSize;
-};
+    int bitmapSize;
+    void init(int rSize) {
+        recordSize = (rSize + 3) / 4;
+        curFreePage = 1;
+        curPageNum = 1;
 
-struct RM_PageConfig {
-    int curRecordNum;
-    int nextFreePage;
-    unsigned int *bitmap;
+        pageConfigSize = sizeof(RM_PageConfig) / sizeof(int);
+
+        maxPageRecordNum = ((PAGE_INT_NUM - pageConfigSize) * 32 - 31) / (32 * recordSize + 1);
+
+        // n * rs + (n + 31) / 32 + cs <= ps
+        // n <= ((ps - cs) * 32 - 31) / (32 * rs + 1)
+
+        bitmapSize = (maxPageRecordNum + 31) / 32;
+
+    }
 };
 
 int getBitFromLeft(unsigned int* bitmap, int index, int bitmapSize) {
@@ -34,3 +55,5 @@ int getFirstBitFromLeft(unsigned int* bitmap, int bitmapSize, int bit) {
     }
     return -1;
 }
+
+#endif
