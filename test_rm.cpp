@@ -43,4 +43,8 @@ int main() {
     
     rm->closeFile(fileID);
 
+
+
+    // printf("%d", sizeof(te));
+
 }
