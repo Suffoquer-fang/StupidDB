@@ -47,32 +47,49 @@ class IX_IndexHandle {
 
 
     private:
+
         bool recurInsertEntry(int nodeID, void *pData, RID rid) {
             int m = fileConfig.maxKeyNum;
             int attrLen = fileConfig.attrLength;
             AttrType attrType = fileConfig.attrType;
 
             IX_BPlusTreeNode* curNode = convertPageToNode(nodeID);
+
+            bool ret = false;
+
             if(!curNode->isLeafNode) {
                 for(int i = curNode->curNum - 1; i >= 0; --i) {
-                    void* tmp_key = curNode->keys + i * attrLen;
-                    if(compareAttr(pData, tmp_key, attrType, attrLen) >= 0) {
+                    void* tmp_key = curNode->getIthKeyPointer(i, attrLen);
+                    if(i == 0 || compareAttr(pData, tmp_key, attrType, attrLen) >= 0) {
                         int new_id = curNode->rids[2 * i];
-                        return recurInsertEntry(new_id, pData, rid);
+                        ret = recurInsertEntry(new_id, pData, rid);
+                        break;
                     }
                 }
-                int new_id = curNode->rids[0];
-                memcpy(curNode->keys, pData, attrLen);
-                return recurInsertEntry(new_id, pData, rid);
-
             } else {
-                for(int i = curNode->curNum - 1; i >= 0; --i) {
-                    void* tmp_key = curNode->keys + i * attrLen;
-                    if(compareAttr(pData, tmp_key, attrType, attrLen) >= 0) {
-                        memcpy(curNode)
-                    }
+                int i;
+                for(i = curNode->curNum; i > 0; --i) {
+                    void* tmp_key = curNode->getIthKeyPointer(i - 1, attrLen);
+                    if(compareAttr(pData, tmp_key, attrType, attrLen) >= 0) 
+                        break;
+                    memcpy(curNode->getIthKeyPointer(i, attrLen), curNode->getIthKeyPointer(i - 1, attrLen), attrLen);
+                    curNode->setRID(i, curNode->getIthPage(i - 1), curNode->getIthSlot(i - 1));
                 }
+
+                memcpy(curNode->getIthKeyPointer(i, attrLen), pData, attrLen);
+                curNode->setRID(i, rid);
+
+                ret = true;
             }
+
+
+
+
+
+
+
+
+            return true;
         }
 
         

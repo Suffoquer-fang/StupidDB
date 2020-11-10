@@ -20,6 +20,21 @@ struct IX_BPlusTreeNode {
         nextNode = nxt;
         parentNode = par;
     }
+
+    unsigned int* getIthKeyPointer(int i, int attrLen) {return keys + i * attrLen;}
+    unsigned int getIthPage(int i) {return rids[2 * i];}
+    unsigned int getIthSlot(int i) {return rids[2 * i + 1];}
+
+    void setRID(int i, RID rid) {
+        rids[2 * i] = rid.pageID;
+        rids[2 * i + 1] = rid.slotID;
+    }
+
+    void setRID(int i, int pageID, int slotID) {
+        rids[2 * i] = pageID;
+        rids[2 * i + 1] = slotID;
+    }
+
 };
 
 struct IX_FileConfig {
