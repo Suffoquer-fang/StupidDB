@@ -29,18 +29,48 @@ struct IX_FileConfig {
     int curNodeNum;
     int maxKeyNum;
     int treeNodeInfoSize;
-    int maxKeySize;
+    int maxRidSize;
 
-    void init(AttrType attr) {
+    void init(AttrType attr, int attrLen) {
         attrType = attr;
+        attrLength = attrLen;
+        rootNode = 1;
+        curNodeNum = 1;
+
         
+        treeNodeInfoSize = (sizeof(IX_BPlusTreeNode) - 2 * sizeof(unsigned int *)) / sizeof(uint);
+        maxKeyNum = (PAGE_INT_NUM - treeNodeInfoSize) * sizeof(uint) / (sizeof(RID) + attrLength) - 1;
+        maxRidSize = sizeof(RID) * maxKeyNum / sizeof(uint);
+
     }
 };
 
 
 
 
-
+int compareAttr(void* a, void* b, AttrType attrType, int attrLen) {
+    bool less = false;
+    bool eql = false;
+    switch (attrType)
+    {
+        case INTEGER:
+            eql = *((int*)a) == *((int*)b);
+            less = *((int*)a) < *((int*)b);
+            break;
+        case FLOAT:
+            eql = *((float*)a) == *((float*)b);
+            less = *((float*)a) < *((float*)b);
+            break;
+        case STRING:
+            return memcmp(a, b, attrLen);
+            break;
+            
+        default:
+            break;
+        
+        return less ? -1 : (eql ? 0 : 1);
+    }
+}
 
 
 
