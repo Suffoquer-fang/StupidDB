@@ -21,23 +21,33 @@ class IX_IndexHandle {
             int curID = fileConfig.rootNode;
             
             IX_BPlusTreeNode *fake = nullptr;
-            recurInsertEntry(curID, pData, rid, fake);
+            bool ret = recurInsertEntry(curID, pData, rid, fake);
             if(fake) {
                 // fake->debug();
                 forceWrite(fake);
                 delete fake;
             }
             updateFileConfig();
-
-            
+            return ret;
         }
-
-
-
 
         bool deleteEntry(void *pData, RID rid) {
+            int rootID = fileConfig.rootNode;
 
+            IX_BPlusTreeNode *fake = nullptr;
+            bool ret = recurDeleteEntry(rootID, pData, rid, fake);
+            if(fake) {
+                forceWrite(fake);
+                delete fake;
+            }
+            updateFileConfig();
+            
+            return ret;
         }
+
+
+
+
 
         IX_BPlusTreeNode* convertPageToNode(int pageID) {
             IX_BPlusTreeNode* node = new IX_BPlusTreeNode();
@@ -116,7 +126,7 @@ class IX_IndexHandle {
                     
                     curNode->parentNode = parent;
 
-                    printf("\nmake new parent %d %d\n", curNode->selfID, curNode->curNum);
+                    // printf("\nmake new parent %d %d\n", curNode->selfID, curNode->curNum);
                     
                 }
 
@@ -124,7 +134,7 @@ class IX_IndexHandle {
 
                 IX_BPlusTreeNode* newNode = splitNode(curNode, attrLen);
                 
-                printf("\ndone split\n");
+                // printf("\ndone split\n");
 
                 if(!parentNode) parentNode = convertPageToNode(curNode->parentNode);
                 int curWhichChild = whichChild(nodeID, parentNode);
@@ -209,6 +219,29 @@ class IX_IndexHandle {
 
             return newNode;
 
+
+        }
+
+
+        
+
+        bool recurDeleteEntry(int nodeID, void *pData, RID rid, IX_BPlusTreeNode* &parentNode) {
+            int attrLen = fileConfig.attrLength;
+            AttrType attrType = fileConfig.attrType;
+
+            IX_BPlusTreeNode* curNode = convertPageToNode(nodeID);
+
+            bool ret = false;
+
+            if(curNode->isLeafNode) {
+                
+            }
+            
+            
+            return true;
+        }
+
+        bool recurIsEntryExist(int nodeID, void *pData) {
 
         }
 
