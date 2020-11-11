@@ -2,6 +2,7 @@
 #define IX_INTERNAL
 
 #include "../utils/constants.h"
+#include "../rm/record.h"
 
 struct IX_BPlusTreeNode {
     bool isLeafNode;
@@ -9,6 +10,7 @@ struct IX_BPlusTreeNode {
     int prevNode;
     int nextNode;
     int parentNode;
+    int selfID;
     
     unsigned int* keys;
     unsigned int* rids;
@@ -35,6 +37,17 @@ struct IX_BPlusTreeNode {
         rids[2 * i + 1] = slotID;
     }
 
+
+    void debug() {
+        printf("nodeID: %d, parent: %d, prev %d, next %d\n", selfID, parentNode, prevNode, nextNode);
+        printf("childNum: %d\n", curNum);
+        for(int i = 0; i < min(curNum, 5); ++i)
+            printf("%d: %d - %d   ", i, *(getIthKeyPointer(i, 4)), getIthPage(i));
+        printf("\n\n");
+
+
+    }
+
 };
 
 struct IX_FileConfig {
@@ -53,8 +66,8 @@ struct IX_FileConfig {
         curNodeNum = 1;
 
         
-        treeNodeInfoSize = (sizeof(IX_BPlusTreeNode) - 2 * sizeof(unsigned int *)) / sizeof(uint);
-        maxKeyNum = (PAGE_INT_NUM - treeNodeInfoSize) * sizeof(uint) / (sizeof(RID) + attrLength) - 1;
+        treeNodeInfoSize = (sizeof(IX_BPlusTreeNode) - 2 * sizeof(unsigned int *));
+        maxKeyNum = (PAGE_INT_NUM - treeNodeInfoSize) * sizeof(uint) / (sizeof(RID) + attrLength) - 2;
         maxRidSize = sizeof(RID) * maxKeyNum / sizeof(uint);
 
     }
@@ -83,8 +96,9 @@ int compareAttr(void* a, void* b, AttrType attrType, int attrLen) {
         default:
             break;
         
-        return less ? -1 : (eql ? 0 : 1);
     }
+
+    return less ? -1 : (eql ? 0 : 1);
 }
 
 
