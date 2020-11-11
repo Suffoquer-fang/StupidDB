@@ -82,5 +82,19 @@ int main() {
     
     ih->debug(ih->fileConfig.rootNode);
 
+    printf("************\n\n");
+
+    attr = 3;
+    rid.set(10, 0);
+    ih->insertEntry(&attr, rid);
+
+    ih->debug(ih->fileConfig.rootNode);
+    printf("************\n\n");
+    attr = 4;
+    rid.set(11, 0);
+    ih->insertEntry(&attr, rid);
+    
+    ih->debug(ih->fileConfig.rootNode);
+
     return 0;
 }

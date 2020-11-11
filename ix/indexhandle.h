@@ -20,12 +20,13 @@ class IX_IndexHandle {
         bool insertEntry(void *pData, RID rid) {
             int curID = fileConfig.rootNode;
             
-            IX_BPlusTreeNode *fake = NULL;
+            IX_BPlusTreeNode *fake = nullptr;
             recurInsertEntry(curID, pData, rid, fake);
-            // if(!fake) {
-            //     printf("fake, %d\n", fake);
-            // }
-            // delete fake;
+            if(fake) {
+                // fake->debug();
+                forceWrite(fake);
+                delete fake;
+            }
             updateFileConfig();
 
             
@@ -116,8 +117,7 @@ class IX_IndexHandle {
                     curNode->parentNode = parent;
 
                     printf("\nmake new parent %d %d\n", curNode->selfID, curNode->curNum);
-                    // return true;
-                    // forceWrite(parentNode);
+                    
                 }
 
 
@@ -149,13 +149,8 @@ class IX_IndexHandle {
 
                 
                 forceWrite(newNode);
-                forceWrite(parentNode);
 
-                // printf("***************\n");
-                // newNode->debug();
-                // curNode->debug();
-
-                // printf("***************************\n");
+               
 
                 delete newNode;
                 // delete parentNode;

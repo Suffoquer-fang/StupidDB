@@ -67,8 +67,9 @@ struct IX_FileConfig {
 
         
         treeNodeInfoSize = (sizeof(IX_BPlusTreeNode) - 2 * sizeof(unsigned int *));
-        maxKeyNum = (PAGE_INT_NUM - treeNodeInfoSize) * sizeof(uint) / (sizeof(RID) + attrLength) - 2;
+        maxKeyNum = (PAGE_INT_NUM - treeNodeInfoSize) * sizeof(uint) / (sizeof(RID) + attrLength) - 1;
         maxRidSize = sizeof(RID) * maxKeyNum / sizeof(uint);
+        maxKeyNum -= 1;
 
     }
 };
