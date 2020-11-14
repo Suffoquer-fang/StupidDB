@@ -14,7 +14,17 @@ class IX_IndexHandle {
         IX_FileConfig fileConfig;
 
     
-        IX_IndexHandle() {}
+        IX_IndexHandle(FileManager *fm, BufPageManager *bpm, int fileID) {
+            this->fileID = fileID;
+            this->fm = fm;
+            this->bpm = bpm;
+
+            int tmp_index;
+            BufType data = bpm->getPage(fileID, 0, tmp_index);
+            memcpy(&fileConfig, data, sizeof(IX_FileConfig));
+            
+            bpm->access(tmp_index);
+        }
         ~IX_IndexHandle() {}
 
         bool insertEntry(void *pData, RID rid) {
@@ -233,12 +243,68 @@ class IX_IndexHandle {
 
             bool ret = false;
 
-            if(curNode->isLeafNode) {
-                
+            if(!curNode->isLeafNode) {
+                for(int i = curNode->curNum - 1; i >= 0; --i) {
+                    void* tmp_key = curNode->getIthKeyPointer(i, attrLen);
+                    if(i == 0 || compareAttr(pData, tmp_key, attrType, attrLen) >= 0) {
+                        int new_id = curNode->rids[2 * i];
+                        ret = recurDeleteEntry(new_id, pData, rid, curNode);
+                        break;
+                    }
+                }
+            } else {
+                int id = -1;
+                for(int i = 0; i < curNode->curNum; ++i) {
+                    if(compareAttr(pData, curNode->getIthKeyPointer(i, attrLen), attrType, attrLen) == 0 && rid.equal(curNode->getIthPage(i), curNode->getIthSlot(i))) {
+                        id = i;
+                        break;
+                    }
+                }
+
+                if(id != -1) {
+                    curNode->curNum -= 1;
+                    for(int i = id; i < curNode->curNum; ++i) {
+                        memcpy(curNode->getIthKeyPointer(i, attrLen), curNode->getIthKeyPointer(i + 1, attrLen), attrLen);
+                        curNode->setRID(i, curNode->getIthPage(i + 1), curNode->getIthSlot(i + 1));
+                    }
+                    ret = true;
+
+                } else {
+                    delete curNode;
+                    return false;
+                }
+
             }
+
+            if(curNode->curNum == 0) {
+                if(curNode->isLeafNode) {
+                    if(curNode->prevNode > 0)
+                        modifyNext(curNode->prevNode, curNode->nextNode);
+                    if(curNode->nextNode > 0)
+                        modifyPrev(curNode->nextNode, curNode->prevNode);
+                }
+
+                if(nodeID == fileConfig.rootNode) return ret;
+
+                int curWhichChild = whichChild(nodeID, parentNode);
+                
+                if(curWhichChild == -1) {
+                    printf("error");
+                }
+
+                parentNode->curNum -= 1;
+                for(int i = curWhichChild; i < parentNode->curNum; ++i) {
+                    memcpy(curNode->getIthKeyPointer(i, attrLen), curNode->getIthKeyPointer(i + 1, attrLen), attrLen);
+                    curNode->setRID(i, curNode->getIthPage(i + 1), curNode->getIthSlot(i + 1));
+                }
+
+
+            }
+
+            forceWrite(curNode);
+            delete curNode;
             
-            
-            return true;
+            return ret;
         }
 
         bool recurIsEntryExist(int nodeID, void *pData) {
@@ -255,6 +321,13 @@ class IX_IndexHandle {
         void modifyPrev(int id, int prev){
             IX_BPlusTreeNode *tmp = convertPageToNode(id);
             tmp->prevNode = prev;
+            forceWrite(tmp);
+            delete tmp;
+        }
+
+        void modifyNext(int id, int next) {
+            IX_BPlusTreeNode *tmp = convertPageToNode(id);
+            tmp->nextNode = next;
             forceWrite(tmp);
             delete tmp;
         }

@@ -18,6 +18,14 @@ struct RID {
         slotID = s;
     }
 
+    bool equal(const RID &rid) {
+        return (pageID == rid.pageID) && (slotID == rid.slotID);
+    }
+
+    bool equal(int p, int s) {
+        return (pageID == p) && (slotID == s);
+    }
+
 };
 
 
@@ -50,6 +58,7 @@ public:
     RID getRID() { 
         return this->rid;
     }
+
 
     void display() {
         for(int i = 0; i < size; ++i)

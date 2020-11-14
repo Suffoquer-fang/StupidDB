@@ -35,12 +35,46 @@ class IX_IndexManager {
             memcpy(buf, &fileConfig, sizeof(IX_FileConfig));
             bpm->markDirty(index);
             bpm->writeBack(index);
+            
+            
+            BufType buf = bpm->getPage(fileID, 1, index);
+            IX_BPlusTreeNode *root = new IX_BPlusTreeNode();
+            root->init(true, -1, -1, -1);
+            root->curNum = 0;
+
+            memcpy(buf, root, fileConfig.treeNodeInfoSize);
+            
+            bpm->markDirty(index);
+            bpm->writeBack(index);
+
+            delete root;
+            
+            
+            
+            
             fm->closeFile(fileID);
 
             return true;
         }
 
         bool deleteIndex() {}
+
+
+        bool openIndex(const char* name, int& fileID) {
+            bool ret = fm->openFile(name, fileID);
+            if(!ret) return false;
+            
+            return true;
+        }
+        bool closeIndex(int fileID) {
+            bpm->close();
+            return fm->closeFile(fileID);
+        }
+
+        IX_IndexHandle* getIndexHandle(int fileID) {
+            IX_IndexHandle* ret = new IX_IndexHandle(fm, bpm, fileID);
+            return ret;
+        }
 
         
 
