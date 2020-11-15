@@ -37,7 +37,7 @@ class IX_IndexManager {
             bpm->writeBack(index);
             
             
-            BufType buf = bpm->getPage(fileID, 1, index);
+            buf = bpm->getPage(fileID, 1, index);
             IX_BPlusTreeNode *root = new IX_BPlusTreeNode();
             root->init(true, -1, -1, -1);
             root->curNum = 0;

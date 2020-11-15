@@ -13,6 +13,11 @@ struct RID {
         slotID = -1;
     }
 
+    RID(int p, int s) {
+        pageID = p;
+        slotID = s;
+    }
+
     void set(int p, int s) {
         pageID = p;
         slotID = s;
