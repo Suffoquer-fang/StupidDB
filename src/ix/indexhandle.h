@@ -1,3 +1,4 @@
+#pragma once
 #include "../filesystem/fs.h"
 #include "utils.h"
 #include "../rm/record.h"
@@ -56,6 +57,17 @@ class IX_IndexHandle {
             return ret;
         }
 
+        bool searchFirstEntry(void *pData, int &retID, int &index) {
+            int rootID = fileConfig.rootNode;
+            return recurSearchEntryFirst(rootID, pData, retID, index);
+        }
+
+        bool searchLastEntry(void *pData, int &retID, int &index) {
+            int rootID = fileConfig.rootNode;
+            return recurSearchEntry(rootID, pData, retID, index);
+        }
+
+
         bool searchEntry(void *pData, vector<RID>& vec) {
             int rootID = fileConfig.rootNode;
             int attrLen = fileConfig.attrLength;
@@ -65,8 +77,8 @@ class IX_IndexHandle {
             int nodeID = -1;
             bool ret = recurSearchEntry(rootID, pData, nodeID, index);
             if(!ret) return false;
-            
-            IX_BPlusTreeNode* node = convertPageToNode(nodeID);
+            IX_BPlusTreeNode* node = new IX_BPlusTreeNode();
+            convertPageToNode(nodeID, node);
             while(true) {
                 for(int i = index; i >= 0; --i) {
                     if(compareAttr(pData, node->getIthKeyPointer(i, attrLen), attrType, attrLen) == 0) {
@@ -78,8 +90,7 @@ class IX_IndexHandle {
                 }
                 int prevID = node->prevNode;
                 if(prevID > 0) {
-                    delete node;
-                    node = convertPageToNode(prevID);
+                    convertPageToNode(prevID, node);
                     index = node->curNum - 1;
                 } else {
                     delete node;
@@ -92,8 +103,8 @@ class IX_IndexHandle {
 
 
 
-        IX_BPlusTreeNode* convertPageToNode(int pageID) {
-            IX_BPlusTreeNode* node = new IX_BPlusTreeNode();
+        void convertPageToNode(int pageID, IX_BPlusTreeNode* &node) {
+            if(!node) node = new IX_BPlusTreeNode();
             
             int index;
             BufType buf = bpm->getPage(fileID, pageID, index);
@@ -107,13 +118,13 @@ class IX_IndexHandle {
 
             node->selfID = pageID;
 
-            return node;
         }
 
 
 
         void debug(int id) {
-            IX_BPlusTreeNode *node = convertPageToNode(id);
+            IX_BPlusTreeNode *node = new IX_BPlusTreeNode();
+            convertPageToNode(id, node);
             node->debug();
             if(!node->isLeafNode) {
                 for(int i = 0; i < node->curNum; ++i) {
@@ -127,11 +138,11 @@ class IX_IndexHandle {
 
         void iterLeaves(vector<int>&key, vector<RID>& vec) {
             int rootID = fileConfig.rootNode;
-            IX_BPlusTreeNode *node = convertPageToNode(rootID);
+            IX_BPlusTreeNode *node = new IX_BPlusTreeNode();
+            convertPageToNode(rootID, node);
             while(!node->isLeafNode) {
                 int id = node->getIthPage(0);
-                delete node;
-                node = convertPageToNode(id);
+                convertPageToNode(id, node);
             }
             while(true) {
                 for(int i = 0; i < node->curNum; ++i) {
@@ -140,8 +151,7 @@ class IX_IndexHandle {
                 }
                 if(node->nextNode > 0) {
                     int next = node->nextNode;
-                    delete node;
-                    node = convertPageToNode(next);
+                    convertPageToNode(next, node);
                 } else {
                     return;
                 }
@@ -151,11 +161,22 @@ class IX_IndexHandle {
         void forceWrite(IX_BPlusTreeNode *node) {
             if(node->selfID <= 0) return;
 
-            printf("force %d %d\n", node->selfID, node->curNum);
+            // printf("force %d %d\n", node->selfID, node->curNum);
             int index;
             BufType buf = bpm->getPage(fileID, node->selfID, index);
             memcpy(buf, node, fileConfig.treeNodeInfoSize);
             bpm->markDirty(index);
+        }
+
+        void getFirstEntry(IX_BPlusTreeNode* &node) {
+            int rootID = fileConfig.rootNode;
+            if(!node)
+                node = new IX_BPlusTreeNode();
+            convertPageToNode(rootID, node);
+            while(!node->isLeafNode) {
+                int id = node->getIthPage(0);
+                convertPageToNode(id, node);
+            }
         }
 
 
@@ -166,7 +187,8 @@ class IX_IndexHandle {
             int attrLen = fileConfig.attrLength;
             AttrType attrType = fileConfig.attrType;
 
-            IX_BPlusTreeNode* curNode = convertPageToNode(nodeID);
+            IX_BPlusTreeNode* curNode = new IX_BPlusTreeNode();
+            convertPageToNode(nodeID, curNode);
 
             bool ret = false;
 
@@ -207,7 +229,7 @@ class IX_IndexHandle {
 
                 if(curNode->parentNode <= 0) {
                     int parent = ++fileConfig.curNodeNum;
-                    parentNode = convertPageToNode(parent);
+                    convertPageToNode(parent, parentNode);
                     fileConfig.rootNode = parent;
 
                     parentNode->init(false, -1, -1, -1);
@@ -227,7 +249,7 @@ class IX_IndexHandle {
                 
                 // printf("\ndone split\n");
 
-                if(!parentNode) parentNode = convertPageToNode(curNode->parentNode);
+                // if(!parentNode) parentNode = convertPageToNode(curNode->parentNode);
                 int curWhichChild = whichChild(nodeID, parentNode);
 
                 if(curWhichChild == -1) {
@@ -241,7 +263,7 @@ class IX_IndexHandle {
                 }
 
                 parentNode->curNum += 1;
-                printf("add %d %d\n\n", parentNode->selfID, parentNode->curNum);
+                // printf("add %d %d\n\n", parentNode->selfID, parentNode->curNum);
 
                 memcpy(parentNode->getIthKeyPointer(curWhichChild, attrLen), curNode->keys, attrLen);
                 memcpy(parentNode->getIthKeyPointer(curWhichChild + 1, attrLen), newNode->keys, attrLen);
@@ -271,12 +293,13 @@ class IX_IndexHandle {
             int newNodeID = ++fileConfig.curNodeNum;
             int curID = curNode->selfID;
             
-            IX_BPlusTreeNode* newNode = convertPageToNode(newNodeID);
+            IX_BPlusTreeNode* newNode = new IX_BPlusTreeNode();
+            convertPageToNode(newNodeID, newNode);
             newNode->init(curNode->isLeafNode, curID, curNode->nextNode, curNode->parentNode);
 
             int m = curNode->curNum / 2;
 
-            printf("\nm = %d\n", newNode->parentNode);            
+            // printf("\nm = %d\n", newNode->parentNode);            
             newNode->curNum = curNode->curNum - m;
 
             for(int i = 0; i < newNode->curNum; ++i) {
@@ -292,7 +315,7 @@ class IX_IndexHandle {
             curNode->curNum = m;
             curNode->nextNode = newNodeID;
 
-            printf("\ndone trans\n");
+            // printf("\ndone trans\n");
 
             if(!newNode->isLeafNode) {
                 for(int i = 0; i < newNode->curNum; ++i) {
@@ -320,16 +343,17 @@ class IX_IndexHandle {
             int attrLen = fileConfig.attrLength;
             AttrType attrType = fileConfig.attrType;
 
-            IX_BPlusTreeNode* curNode = convertPageToNode(nodeID);
+            IX_BPlusTreeNode* curNode = new IX_BPlusTreeNode();
+            convertPageToNode(nodeID, curNode);
 
             bool ret = false;
 
             if(!curNode->isLeafNode) {
                 int start = 0;
-                for(int i = 0; i < curNode->curNum - 1; ++i) {
-                    if(compareAttr(pData, curNode->getIthKeyPointer(i, attrLen), attrType, attrLen) >= 0)
-                        break;
+                for(int i = 0; i < curNode->curNum; ++i) {
                     start = i;
+                    if(i == curNode->curNum-1 || compareAttr(pData, curNode->getIthKeyPointer(i+1, attrLen), attrType, attrLen) < 0)
+                        break;
                 }
 
 
@@ -396,11 +420,41 @@ class IX_IndexHandle {
             return ret;
         }
 
+        bool recurSearchEntryFirst(int nodeID, void *pData, int &retID, int &index) {
+            int startID, startIndex;
+            bool ret = recurSearchEntry(nodeID, pData, startID, startIndex);
+            if(!ret) return ret;
+
+            IX_BPlusTreeNode* curNode = new IX_BPlusTreeNode();
+            convertPageToNode(startID, curNode);
+            retID = startID;
+            index = startIndex;
+            while(true) {
+                for(int i = startIndex; i >= 0; --i) {
+                    if(compareAttr(pData, curNode->getIthKeyPointer(i, fileConfig.attrLength), fileConfig.attrType, fileConfig.attrLength) == 0) {
+                        index = i;
+                    } else {
+                        delete curNode;
+                        return true;
+                    }
+                }
+                int prev = curNode->prevNode;
+                if(prev > 0) {
+                    convertPageToNode(prev, curNode);
+                    startIndex = curNode->curNum - 1;
+                } else {
+                    delete curNode;
+                    return true;
+                }
+            }
+        }
+
         bool recurSearchEntry(int nodeID, void *pData, int &retID, int &index) {
             int attrLen = fileConfig.attrLength;
             AttrType attrType = fileConfig.attrType;
 
-            IX_BPlusTreeNode* curNode = convertPageToNode(nodeID);
+            IX_BPlusTreeNode* curNode = new IX_BPlusTreeNode();
+            convertPageToNode(nodeID, curNode);
 
             bool ret = false;
 
@@ -434,21 +488,24 @@ class IX_IndexHandle {
         }
 
         void modifyParent(int id, int parent) {
-            IX_BPlusTreeNode *tmp = convertPageToNode(id);
+            IX_BPlusTreeNode *tmp = new IX_BPlusTreeNode();
+            convertPageToNode(id, tmp);
             tmp->parentNode = parent;
             forceWrite(tmp);
             delete tmp;
         }
 
         void modifyPrev(int id, int prev){
-            IX_BPlusTreeNode *tmp = convertPageToNode(id);
+            IX_BPlusTreeNode *tmp = new IX_BPlusTreeNode();
+            convertPageToNode(id, tmp);
             tmp->prevNode = prev;
             forceWrite(tmp);
             delete tmp;
         }
 
         void modifyNext(int id, int next) {
-            IX_BPlusTreeNode *tmp = convertPageToNode(id);
+            IX_BPlusTreeNode *tmp = new IX_BPlusTreeNode();
+            convertPageToNode(id, tmp);
             tmp->nextNode = next;
             forceWrite(tmp);
             delete tmp;

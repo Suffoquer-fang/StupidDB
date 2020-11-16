@@ -4,5 +4,14 @@
 enum AttrType {
 	INTEGER,
 	FLOAT,
-	STRING
+	STRING,
+};
+
+enum CompareOP {
+	EQ,
+	LT,
+	GT,
+	LE,
+	GE,
+	NE
 };

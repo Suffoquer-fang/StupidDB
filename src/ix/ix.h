@@ -1,5 +1,6 @@
 #include "../filesystem/fs.h"
 #include "indexhandle.h"
+#include "indexscan.h"
 #include <cstring>
 
 class IX_IndexManager {
