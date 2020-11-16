@@ -34,4 +34,6 @@
 *.exe 
 *.txt
 
-Debug\
+
+bin/
+build/

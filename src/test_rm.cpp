@@ -2,6 +2,7 @@
 // #include "rm_internal.h"
 #include <cstdio>
 #include <cstring>
+#include <cassert>
 
 int main() {
     puts("Test Record Manager");
@@ -11,17 +12,17 @@ int main() {
     BufPageManager *bpm = new BufPageManager(fm);
     RM_RecordManager *rm = new RM_RecordManager(fm, bpm);
 
+    const char *name = "rm_test_data.txt";
 
-
-    rm->createFile("1.txt", 16);
+    rm->createFile(name, 16);
     int fileID;
-    rm->openFile("1.txt", fileID);
+    rm->openFile(name, fileID);
 
     RM_FileHandle *fh = rm->getFileHandle(fileID);
     rm->fh->debug();
     int page, slot;
     RID rid;
-    uint tmp_data[5] = {1, 2, 3, 4, 5}; 
+    uint tmp_data[4] = {1, 2, 3, 4}; 
     // puts("before");
     for(int i = 0; i < 1000; ++i) {
         tmp_data[0] = i;
@@ -34,14 +35,23 @@ int main() {
     }
 
     Record record;
-    rid.set(1, 100);
-    fh->getRecord(rid, record);
+    
 
+    uint* data;
 
-    rm->fh->debug();
-    record.display();
+    for(int i = 100; i < 200; ++i) {
+        rid.set(1, i);
+        fh->getRecord(rid, record);
+        record.getData(data);
+        
+        assert(data[0] == i);
+        assert(data[3] == 4);
+    }
     
     rm->closeFile(fileID);
+
+
+    rm->destroyFile(name);
 
 
 

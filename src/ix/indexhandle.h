@@ -111,7 +111,55 @@ class IX_IndexHandle {
         }
 
 
-    public:
+
+        void debug(int id) {
+            IX_BPlusTreeNode *node = convertPageToNode(id);
+            node->debug();
+            if(!node->isLeafNode) {
+                for(int i = 0; i < node->curNum; ++i) {
+                    debug(node->getIthPage(i));
+                }
+            }
+
+            delete node;
+            return;
+        }
+
+        void iterLeaves(vector<int>&key, vector<RID>& vec) {
+            int rootID = fileConfig.rootNode;
+            IX_BPlusTreeNode *node = convertPageToNode(rootID);
+            while(!node->isLeafNode) {
+                int id = node->getIthPage(0);
+                delete node;
+                node = convertPageToNode(id);
+            }
+            while(true) {
+                for(int i = 0; i < node->curNum; ++i) {
+                    key.push_back(*(node->getIthKeyPointer(i, fileConfig.attrLength)));
+                    vec.push_back(RID(node->getIthPage(i), node->getIthSlot(i)));
+                }
+                if(node->nextNode > 0) {
+                    int next = node->nextNode;
+                    delete node;
+                    node = convertPageToNode(next);
+                } else {
+                    return;
+                }
+            }
+        }
+
+        void forceWrite(IX_BPlusTreeNode *node) {
+            if(node->selfID <= 0) return;
+
+            printf("force %d %d\n", node->selfID, node->curNum);
+            int index;
+            BufType buf = bpm->getPage(fileID, node->selfID, index);
+            memcpy(buf, node, fileConfig.treeNodeInfoSize);
+            bpm->markDirty(index);
+        }
+
+
+    private:
 
         bool recurInsertEntry(int nodeID, void *pData, RID rid, IX_BPlusTreeNode* &parentNode) {
             int m = fileConfig.maxKeyNum;
@@ -406,15 +454,7 @@ class IX_IndexHandle {
             delete tmp;
         }
 
-        void forceWrite(IX_BPlusTreeNode *node) {
-            if(node->selfID <= 0) return;
-
-            printf("force %d %d\n", node->selfID, node->curNum);
-            int index;
-            BufType buf = bpm->getPage(fileID, node->selfID, index);
-            memcpy(buf, node, fileConfig.treeNodeInfoSize);
-            bpm->markDirty(index);
-        }
+        
 
         void updateFileConfig() {
             int index;
@@ -433,40 +473,6 @@ class IX_IndexHandle {
 
 
 
-        void debug(int id) {
-            IX_BPlusTreeNode *node = convertPageToNode(id);
-            node->debug();
-            if(!node->isLeafNode) {
-                for(int i = 0; i < node->curNum; ++i) {
-                    debug(node->getIthPage(i));
-                }
-            }
-
-            delete node;
-            return;
-        }
-
-        void iterLeaves(vector<int>&key, vector<RID>& vec) {
-            int rootID = fileConfig.rootNode;
-            IX_BPlusTreeNode *node = convertPageToNode(rootID);
-            while(!node->isLeafNode) {
-                int id = node->getIthPage(0);
-                delete node;
-                node = convertPageToNode(id);
-            }
-            while(true) {
-                for(int i = 0; i < node->curNum; ++i) {
-                    key.push_back(*(node->getIthKeyPointer(i, fileConfig.attrLength)));
-                    vec.push_back(RID(node->getIthPage(i), node->getIthSlot(i)));
-                }
-                if(node->nextNode > 0) {
-                    int next = node->nextNode;
-                    delete node;
-                    node = convertPageToNode(next);
-                } else {
-                    return;
-                }
-            }
-        }
+        
         
 };

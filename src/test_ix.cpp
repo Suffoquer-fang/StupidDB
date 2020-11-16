@@ -15,26 +15,18 @@ int main() {
     FileManager *fm = new FileManager();
     BufPageManager *bpm = new BufPageManager(fm);
 
+    const char *name = "test_ix_data";
+    IX_IndexManager* im = new IX_IndexManager(fm, bpm);
     
-
     int fileID;
-    fm->createFile("1ix.txt");
-    fm->openFile("1ix.txt", fileID);
+    im->createIndex(name, 1, INTEGER, 4);
+    im->openIndex(name, 1, fileID);
 
-    
-    IX_IndexHandle* ih = new IX_IndexHandle(fm, bpm, fileID);
-    ih->fileConfig.init(INTEGER, 4);
+    IX_IndexHandle *ih = im->getIndexHandle(fileID);
+    // ih->fileConfig.init(INTEGER, 4);
+    ih->fileConfig.maxKeyNum = 20;
 
-    ih->fileConfig.maxKeyNum = 8;
-
-    IX_BPlusTreeNode *root = ih->convertPageToNode(ih->fileConfig.rootNode);
-    root->init(true);
-    root->curNum = 0;
-
-    root->debug();
-
-    ih->forceWrite(root);
-    delete root;
+    ih->debug(ih->fileConfig.rootNode);
 
 
     printf("maxKey: %d \n\n", ih->fileConfig.maxKeyNum);
@@ -46,18 +38,25 @@ int main() {
     map<int, RID> test_map;
     
 
-    for(int i = 0; i < 50000; ++i) {
+    for(int i = 0; i < 500; ++i) {
         attr = 2 * i;
         rid.set(i + 1, 2 * i);
         ih->insertEntry(&attr, rid);
         test_map.insert(pair<int, RID>(attr, rid));
     }
 
-    for(int i = 49999; i >= 0; --i) {
+    for(int i = 499; i >= 0; --i) {
         attr = 2 * i + 1;
         rid.set(i + 1, 2 * i);
         ih->insertEntry(&attr, rid);
         test_map.insert(pair<int, RID>(attr, rid));
+    }
+
+    for(int i = 20; i < 100; ++i) {
+        attr = 2 * i;
+        rid.set(i + 1, 2 * i);
+        ih->deleteEntry(&attr, rid);
+        test_map.erase(attr);
     }
 
 
@@ -66,18 +65,6 @@ int main() {
 
     ih->iterLeaves(key_vec, rid_vec);
 
-    // for(int i = 0; i < rid_vec.size(); ++i) {
-    //     printf("%d-(%d-%d) ", key_vec[i], rid_vec[i].pageID, rid_vec[i].slotID);
-    // }
-    // printf("\n");
-
-    
-
-
-    
-    // test_map.insert(pair<int, RID>(1, RID(2, 1)));
-    // test_map.insert(pair<int, RID>(2, RID(2, 1)));
-    // test_map.insert(pair<int, RID>(3, RID(2, 1)));
     int i = 0;
     for(auto it = test_map.begin(); it != test_map.end(); ++it) {
         // printf("%d-(%d-%d) ", it->first, (it->second).pageID, (it->second).slotID);
@@ -87,9 +74,8 @@ int main() {
         i += 1;
 
     }
-    puts("pass");
 
-
+    im->destroyIndex(name, 1);
 
     return 0;
 }

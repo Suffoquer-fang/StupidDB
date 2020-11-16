@@ -23,6 +23,7 @@
 #include "filesystem/fs.h"
 #include <iostream>
 
+
 using namespace std;
 
 int main() {
@@ -67,6 +68,10 @@ int main() {
 
     fm->closeFile(fileID);
     fm->closeFile(f2);
+
+	fm->shutdown();
+	unlink("testfile.txt");
+	unlink("testfile2.txt");
 	//程序结束前可以调用BufPageManager的某个函数将缓存中的内容写回
 	//具体的函数大家可以看看ppt或者程序的注释
 	return 0;

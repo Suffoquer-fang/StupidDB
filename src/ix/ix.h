@@ -6,7 +6,6 @@ class IX_IndexManager {
     public:
         FileManager *fm;
         BufPageManager *bpm;
-        IX_IndexHandle *ih;
         
         IX_IndexManager(FileManager *fm, BufPageManager *bpm) {
             this->fm = fm;
@@ -22,34 +21,36 @@ class IX_IndexManager {
         }
         
         bool createIndex(const char* name, int indexNo, AttrType attrType, int attrLen) {
-
-            bool ret = fm->createFile(getFileName(name, indexNo).c_str());
+            
+            const char* realName = getFileName(name, indexNo).c_str();
+            bool ret = fm->createFile(realName);
             if(!ret) return false;
 
             IX_FileConfig fileConfig;
             fileConfig.init(attrType, attrLen);
-            // puts("init");
+            // puts("init\n");
+            // printf("sss %d\n", fileConfig.treeNodeInfoSize);
             int fileID, index;
-            if(!fm->openFile(name, fileID)) return false;
+            if(!fm->openFile(realName, fileID)) return false;
             BufType buf = bpm->getPage(fileID, 0, index);
             memcpy(buf, &fileConfig, sizeof(IX_FileConfig));
             bpm->markDirty(index);
             bpm->writeBack(index);
             
-            
-            buf = bpm->getPage(fileID, 1, index);
+            int index2;
+            BufType buf2 = bpm->getPage(fileID, 1, index2);
             IX_BPlusTreeNode *root = new IX_BPlusTreeNode();
-            root->init(true, -1, -1, -1);
+            root->init(true, 0, 0, 0);
             root->curNum = 0;
 
-            memcpy(buf, root, fileConfig.treeNodeInfoSize);
+            memcpy(buf2, root, fileConfig.treeNodeInfoSize);
             
-            bpm->markDirty(index);
-            bpm->writeBack(index);
+            bpm->markDirty(index2);
+            bpm->writeBack(index2);
 
             delete root;
             
-            
+            // printf("init done\n");
             
             
             fm->closeFile(fileID);
@@ -57,11 +58,16 @@ class IX_IndexManager {
             return true;
         }
 
-        bool deleteIndex() {}
+        bool destroyIndex(const char* name, int indexNo) {
+            const char* realName = getFileName(name, indexNo).c_str();
+            unlink(realName);
+            return true;
+        }
 
 
-        bool openIndex(const char* name, int& fileID) {
-            bool ret = fm->openFile(name, fileID);
+        bool openIndex(const char* name, int indexNo, int& fileID) {
+            const char* realName = getFileName(name, indexNo).c_str();
+            bool ret = fm->openFile(realName, fileID);
             if(!ret) return false;
             
             return true;

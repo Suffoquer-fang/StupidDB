@@ -59,7 +59,7 @@ public:
         memcpy(this->data, pdata, size * sizeof(uint));
     }
 
-    void getData(unsigned int *ret) { ret = this->data; }
+    void getData(unsigned int* &ret) { ret = this->data; }
     RID getRID() { 
         return this->rid;
     }
