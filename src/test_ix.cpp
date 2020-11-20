@@ -24,7 +24,7 @@ int main() {
 
     IX_IndexHandle *ih = im->getIndexHandle(fileID);
     // ih->fileConfig.init(INTEGER, 4);
-    ih->fileConfig.maxKeyNum = 5;
+    ih->fileConfig.maxKeyNum = 8;
 
     ih->debug(ih->fileConfig.rootNode);
 
@@ -82,17 +82,26 @@ int main() {
     ih->insertEntry(&attr, rid);
     ih->insertEntry(&attr, rid);
     ih->insertEntry(&attr, rid);
+    attr = 20;
+    rid.set(4, 2);
+    ih->insertEntry(&attr, rid);
+    ih->insertEntry(&attr, rid);
+    ih->insertEntry(&attr, rid);
     printf("%d\n", ih->searchFirstEntry(&attr, id, index));
     printf("%d %d\n", id, index);
     ih->debug(id);
-    // ih->debug(9);
 
-    IX_IndexScan* is = new IX_IndexScan();
-    is->openScan(ih, LT, &attr);
-    puts("open");
-    while(is->next(rid)) {
-        printf("%d %d\n", rid.slotID, rid.pageID);
-    }
+    printf("%d\n", ih->searchLastEntry(&attr, id, index));
+    printf("%d %d\n", id, index);
+    ih->debug(id);
+
+
+    // IX_IndexScan* is = new IX_IndexScan();
+    // is->openScan(ih, LT, &attr);
+    // puts("open");
+    // while(is->next(rid)) {
+    //     printf("%d %d\n", rid.slotID, rid.pageID);
+    // }
 
 
     im->destroyIndex(name, 1);

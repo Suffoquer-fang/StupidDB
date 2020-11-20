@@ -58,13 +58,24 @@ class IX_IndexHandle {
         }
 
         bool searchFirstEntry(void *pData, int &retID, int &index) {
-            int rootID = fileConfig.rootNode;
-            return recurSearchEntryFirst(rootID, pData, retID, index);
+            bool ret = lessThan(pData, retID, index);
+            if(!ret) return false;
+            IX_BPlusTreeNode *node = new IX_BPlusTreeNode();
+            convertPageToNode(retID, node);
+
+            if(index < node->curNum - 1) {
+                index += 1;
+                return true;
+            } else {
+                retID = node->nextNode;
+                index = 0;
+                return (retID > 0);
+            }
         }
 
         bool searchLastEntry(void *pData, int &retID, int &index) {
-            int rootID = fileConfig.rootNode;
-            return recurSearchEntry(rootID, pData, retID, index);
+            return lessEqual(pData, retID, index);
+            // return recurSearchEntry(fileConfig.rootNode, pData, retID, index);
         }
 
 
@@ -177,6 +188,15 @@ class IX_IndexHandle {
                 int id = node->getIthPage(0);
                 convertPageToNode(id, node);
             }
+        }
+
+
+        bool getRecord(int nodeID, int index, void* &pData, RID &rid) {
+            IX_BPlusTreeNode *node = new IX_BPlusTreeNode();
+            convertPageToNode(nodeID, node);
+            pData = node->getIthKeyPointer(index, fileConfig.attrLength);
+            rid.set(node->getIthPage(index), node->getIthSlot(index));
+            return true;
         }
 
 
@@ -352,7 +372,7 @@ class IX_IndexHandle {
                 int start = 0;
                 for(int i = 0; i < curNode->curNum; ++i) {
                     start = i;
-                    if(i == curNode->curNum-1 || compareAttr(pData, curNode->getIthKeyPointer(i+1, attrLen), attrType, attrLen) < 0)
+                    if(i == curNode->curNum-1 || compareAttr(pData, curNode->getIthKeyPointer(i+1, attrLen), attrType, attrLen) <= 0)
                         break;
                 }
 
@@ -419,33 +439,116 @@ class IX_IndexHandle {
             
             return ret;
         }
-
-        bool recurSearchEntryFirst(int nodeID, void *pData, int &retID, int &index) {
-            int startID, startIndex;
-            bool ret = recurSearchEntry(nodeID, pData, startID, startIndex);
-            if(!ret) return ret;
+        bool lessThan(void *pData, int &retID, int &index) {
+            int attrLen = fileConfig.attrLength;
+            AttrType attrType = fileConfig.attrType;
 
             IX_BPlusTreeNode* curNode = new IX_BPlusTreeNode();
-            convertPageToNode(startID, curNode);
-            retID = startID;
-            index = startIndex;
-            while(true) {
-                for(int i = startIndex; i >= 0; --i) {
-                    if(compareAttr(pData, curNode->getIthKeyPointer(i, fileConfig.attrLength), fileConfig.attrType, fileConfig.attrLength) == 0) {
+            int id = fileConfig.rootNode;
+            convertPageToNode(id, curNode);
+
+            while(!curNode->isLeafNode) {
+                for(int i = 0; i < curNode->curNum; ++i) {
+                    if(i == curNode->curNum - 1 || compareAttr(pData, curNode->getIthKeyPointer(i+1, attrLen), attrType, attrLen) <= 0) {
+                        id = curNode->getIthPage(i);
+                        break;
+                    }
+                }
+                convertPageToNode(id, curNode);
+            }
+            for(int i = curNode->curNum - 1; i >= 0; --i) {
+                if(compareAttr(pData, curNode->getIthKeyPointer(i, attrLen), attrType, attrLen) > 0) {
+                    index = i;
+                    retID = id;
+                    delete curNode;
+                    return true;
+                }
+            }
+            delete curNode;
+            return false;
+
+        }
+
+        bool lessEqual(void *pData, int &retID, int &index) {
+            int attrLen = fileConfig.attrLength;
+            AttrType attrType = fileConfig.attrType;
+
+            IX_BPlusTreeNode* curNode = new IX_BPlusTreeNode();
+            int id = fileConfig.rootNode;
+            convertPageToNode(id, curNode);
+
+            while(!curNode->isLeafNode) {
+                for(int i = curNode->curNum - 1; i >= 0; --i) {
+                    if(i == 0 || compareAttr(pData, curNode->getIthKeyPointer(i, attrLen), attrType, attrLen) >= 0) {
+                        id = curNode->getIthPage(i);
+                        break;
+                    }
+                }
+                convertPageToNode(id, curNode);
+            }
+            for(int i = curNode->curNum - 1; i >= 0; --i) {
+                if(compareAttr(pData, curNode->getIthKeyPointer(i, attrLen), attrType, attrLen) >= 0) {
+                    index = i;
+                    retID = id;
+                    delete curNode;
+                    return true;
+                }
+            }
+            delete curNode;
+            return false;
+        }
+
+
+        bool recurSearchEntryFirst(int nodeID, void *pData, int &retID, int &index) {
+            int attrLen = fileConfig.attrLength;
+            AttrType attrType = fileConfig.attrType;
+
+            IX_BPlusTreeNode* curNode = new IX_BPlusTreeNode();
+            convertPageToNode(nodeID, curNode);
+
+            bool ret = false;
+
+            if(!curNode->isLeafNode) {
+                int start = -1;
+                int end = -1;
+                for(int i = 0; i < curNode->curNum; ++i) {
+                    if(i == curNode->curNum - 1 || compareAttr(pData, curNode->getIthKeyPointer(i+1, attrLen), attrType, attrLen) <= 0) {
+                        start = i;
+                        break;
+                    }
+                }
+                if(start == curNode->curNum - 1)
+                    end = start;
+                else
+                    end = (compareAttr(pData, curNode->getIthKeyPointer(start+1, attrLen), attrType, attrLen) == 0) ? start + 1: start;
+                
+
+                int new_id = curNode->rids[2 * start];
+                ret = recurSearchEntry(new_id, pData, retID, index);
+                if(ret || start == end) {
+                    delete curNode;
+                    return ret;
+                } else {
+                    new_id = curNode->rids[2 * end];
+                    ret = recurSearchEntry(new_id, pData, retID, index);
+                    delete curNode;
+                    return ret;
+                }
+                
+
+            } else {
+                for(int i = curNode->curNum - 1; i >= 0; --i) {
+                    if(compareAttr(pData, curNode->getIthKeyPointer(i, attrLen), attrType, attrLen) == 0) {
                         index = i;
-                    } else {
+                        retID = nodeID;
                         delete curNode;
                         return true;
                     }
                 }
-                int prev = curNode->prevNode;
-                if(prev > 0) {
-                    convertPageToNode(prev, curNode);
-                    startIndex = curNode->curNum - 1;
-                } else {
-                    delete curNode;
-                    return true;
-                }
+
+                
+                delete curNode;
+                return false;
             }
         }
 
@@ -482,8 +585,6 @@ class IX_IndexHandle {
                 
                 delete curNode;
                 return false;
-                
-
             }
         }
 
