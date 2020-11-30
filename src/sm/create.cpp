@@ -2,6 +2,8 @@
 #include <fstream>
 #include <cstring>
 #include <unistd.h>
+#include "utils.h"
+#include <string>
 using namespace std;
 
 int main(int argc, char **argv) {
@@ -13,9 +15,16 @@ int main(int argc, char **argv) {
 	system(strcat(command, argv[1]));
 	chdir(argv[1]);
 
-	ofstream outfile;
-	outfile.open("meta.db");
-	outfile << '0' << endl;
+	ofstream outfile("meta.db");
+	// outfile.open;
+
+	DBConfig config;
+	config.init(string(argv[1]));
+	// cout << config.dbName << endl;
+	outfile << config.dbName << endl;
+    outfile << config.tableNum;
     outfile.close();
+
+
 	return 0;
 }

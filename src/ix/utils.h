@@ -12,7 +12,7 @@ struct IX_BPlusTreeNode {
     int parentNode;
     int selfID;
     
-    unsigned int* keys;
+    char* keys;
     unsigned int* rids;
 
     void init(bool isLeaf = false, int pre = -1, int nxt = -1, int par = -1) {
@@ -23,7 +23,7 @@ struct IX_BPlusTreeNode {
         parentNode = par;
     }
 
-    unsigned int* getIthKeyPointer(int i, int attrLen) {return keys + i * attrLen;}
+    char* getIthKeyPointer(int i, int attrLen) {return keys + i * attrLen;}
     unsigned int getIthPage(int i) {return rids[2 * i];}
     unsigned int getIthSlot(int i) {return rids[2 * i + 1];}
 
@@ -68,7 +68,7 @@ struct IX_FileConfig {
 
         
         treeNodeInfoSize = (sizeof(IX_BPlusTreeNode) - 2 * sizeof(unsigned int *));
-        maxKeyNum = (PAGE_INT_NUM - treeNodeInfoSize) * sizeof(uint) / (sizeof(RID) + attrLength) - 1;
+        maxKeyNum = (PAGE_INT_NUM - treeNodeInfoSize) * sizeof(uint) / (sizeof(RID) + attrLen) - 1;
         maxRidSize = sizeof(RID) * maxKeyNum / sizeof(uint);
         maxKeyNum -= 1;
 

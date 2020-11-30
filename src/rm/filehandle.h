@@ -148,7 +148,25 @@ class RM_FileHandle {
         bpm->markDirty(index);
     }
 
+    bool getNextRID(RID &cur) {
+        int pageID = cur.pageID;
+        int slotID = cur.slotID;
 
+
+        slotID += 1;
+        if(slotID >= fileConfig.maxPageRecordNum) {
+            slotID = 0;
+            pageID += 1;
+        }
+
+        if(pageID >= fileConfig.curPageNum) {
+            return false;
+        }
+        cur.pageID = pageID;
+        cur.slotID = slotID;
+        return true;
+
+    }
     
     
 };

@@ -125,7 +125,7 @@ class IX_IndexHandle {
 
             
             node->rids = buf + fileConfig.treeNodeInfoSize;
-            node->keys = buf + fileConfig.treeNodeInfoSize + fileConfig.maxRidSize;
+            node->keys = (char *)(buf + fileConfig.treeNodeInfoSize + fileConfig.maxRidSize);
 
             node->selfID = pageID;
 
@@ -157,7 +157,7 @@ class IX_IndexHandle {
             }
             while(true) {
                 for(int i = 0; i < node->curNum; ++i) {
-                    key.push_back(*(node->getIthKeyPointer(i, fileConfig.attrLength)));
+                    key.push_back(*((uint *)(node->getIthKeyPointer(i, fileConfig.attrLength))));
                     vec.push_back(RID(node->getIthPage(i), node->getIthSlot(i)));
                 }
                 if(node->nextNode > 0) {
