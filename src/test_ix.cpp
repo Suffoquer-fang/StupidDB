@@ -37,19 +37,20 @@ int main() {
     RID rid;
     
     map<int, RID> test_map;
-    vector<int> datavec(100000, 0);
-    for(int i = 0; i < 100000; ++i)
+    int datasize = 1e6;
+    vector<int> datavec(datasize, 0);
+    for(int i = 0; i < datasize; ++i)
         datavec[i] = rand();
     
     // std::shuffle(datavec.begin(), datavec.end());
 
     auto start = clock();
 
-    for(int i = 0; i < 100000; ++i) {
+    for(int i = 0; i < datasize; ++i) {
 
         attr = datavec[i];
         // if(test_map.find(attr) != test_map.end()) continue;
-        rid.set(i + 1, 2 * i);
+        rid.set(1, 1);
         ih->insertEntry(&attr, rid);
         // test_map.insert(pair<int, RID>(attr, rid));
         // if(i % 10000 == 0)
@@ -57,7 +58,9 @@ int main() {
     }
 
     cout << (clock() - start) * 1.0/ CLOCKS_PER_SEC << endl;
-
+    cout << ih->time_cnt / CLOCKS_PER_SEC << endl;
+    cout << ih->down / CLOCKS_PER_SEC << endl;
+    cout << ih->up / CLOCKS_PER_SEC << endl;
     // for(int i = 49; i >= 0; --i) {
     //     attr = 2 * i + 1;
     //     rid.set(i + 1, 2 * i);
@@ -86,12 +89,12 @@ int main() {
     for(auto it = test_map.begin(); it != test_map.end(); ++it) {
         // printf("%d-(%d-%d) ", it->first, (it->second).pageID, (it->second).slotID);
         // printf("%u-(%d-%d)\n", (uint)(key_vec[i]), rid_vec[i].pageID, rid_vec[i].slotID);
-        if(it->first == key_vec[i]) {} else {
-            printf("%d-(%d-%d) ", it->first, (it->second).pageID, (it->second).slotID);
+        if(it->first != key_vec[i]) {
+            printf("%u-(%d-%d) ", it->first, (it->second).pageID, (it->second).slotID);
             printf("%u-(%d-%d)\n", (uint)(key_vec[i]), rid_vec[i].pageID, rid_vec[i].slotID);
         }
-        assert((it->second).pageID == rid_vec[i].pageID);
-        assert((it->second).slotID == rid_vec[i].slotID);
+        // assert((it->second).pageID == rid_vec[i].pageID);
+        // assert((it->second).slotID == rid_vec[i].slotID);
         i += 1;
 
     }

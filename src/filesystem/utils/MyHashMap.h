@@ -21,8 +21,8 @@ struct DataNode {
  */
 class MyHashMap {
 private:
-	static const int A = 10007;
-	static const int B = 12345;
+	static const int A = 1;
+	static const int B = 1;
 	int CAP_, MOD_;
 	MyLinkList* list;
 	DataNode* a;

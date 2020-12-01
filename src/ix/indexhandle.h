@@ -5,7 +5,7 @@
 #include <cstring>
 #include <cstdio>
 #include <vector>
-
+#include <ctime>
 
 class IX_IndexHandle {
     public:
@@ -14,7 +14,13 @@ class IX_IndexHandle {
         BufPageManager *bpm;
 
         IX_FileConfig fileConfig;
+        
+        IX_BPlusTreeNode nodesPool[10];
+        bool nodesUsed[10];
 
+        double time_cnt;
+        double down;
+        double up;
     
         IX_IndexHandle(FileManager *fm, BufPageManager *bpm, int fileID) {
             this->fileID = fileID;
@@ -26,19 +32,29 @@ class IX_IndexHandle {
             memcpy(&fileConfig, data, sizeof(IX_FileConfig));
             
             bpm->access(tmp_index);
+
+            time_cnt = 0;
+            down = 0;
+            up = 0;
+
+            for(int i = 0; i < 10; ++i)
+                nodesUsed[i] = false;
         }
         ~IX_IndexHandle() {}
 
         bool insertEntry(void *pData, RID rid) {
             int curID = fileConfig.rootNode;
             
-            IX_BPlusTreeNode *fake = nullptr;
-            bool ret = recurInsertEntry(curID, pData, rid, fake);
-            if(fake) {
-                // fake->debug();
-                forceWrite(fake);
-                delete fake;
-            }
+            // IX_BPlusTreeNode *fake = nullptr;
+            // bool ret = recurInsertEntry(curID, pData, rid, fake);
+            // if(fake) {
+            //     // fake->debug();
+            //     forceWrite(fake);
+            //     delete fake;
+            // }
+
+            bool ret = normalInsertEntry(curID, pData, rid);
+
             updateFileConfig();
             return ret;
         }
@@ -119,7 +135,7 @@ class IX_IndexHandle {
             
             int index;
             BufType buf = bpm->getPage(fileID, pageID, index);
-            
+            bpm->access(index);
             
             memcpy(node, buf, fileConfig.treeNodeInfoSize);
 
@@ -129,6 +145,41 @@ class IX_IndexHandle {
 
             node->selfID = pageID;
 
+        }
+
+        IX_BPlusTreeNode* assignNode(int pageID) {
+            IX_BPlusTreeNode* node = nullptr;
+            for(int i = 0; i < 10; ++i) {
+                if(!nodesUsed[i]) {
+                    node = nodesPool + i;
+                    nodesUsed[i] = true;
+                    break;
+                }
+            }
+            if(!node) return node;
+
+            int index;
+            BufType buf = bpm->getPage(fileID, pageID, index);
+            bpm->access(index);
+            
+            memcpy(node, buf, fileConfig.treeNodeInfoSize);
+
+            
+            node->rids = buf + fileConfig.treeNodeInfoSize;
+            node->keys = (char *)(buf + fileConfig.treeNodeInfoSize + fileConfig.maxRidSize);
+
+            node->selfID = pageID;
+
+            return node;
+        }
+
+        void releaseNode(IX_BPlusTreeNode* node) {
+            for(int i = 0; i < 10; ++i) {
+                if(node == nodesPool + i) {
+                    nodesUsed[i] = false;
+                    return;
+                }
+            }
         }
 
 
@@ -171,12 +222,14 @@ class IX_IndexHandle {
 
         void forceWrite(IX_BPlusTreeNode *node) {
             if(node->selfID <= 0) return;
-
+            // auto start = clock();
             // printf("force %d %d\n", node->selfID, node->curNum);
             int index;
             BufType buf = bpm->getPage(fileID, node->selfID, index);
+            // time_cnt += (double)(clock() - start);
             memcpy(buf, node, fileConfig.treeNodeInfoSize);
             bpm->markDirty(index);
+            
         }
 
         void getFirstEntry(IX_BPlusTreeNode* &node) {
@@ -313,8 +366,10 @@ class IX_IndexHandle {
             int newNodeID = ++fileConfig.curNodeNum;
             int curID = curNode->selfID;
             
-            IX_BPlusTreeNode* newNode = new IX_BPlusTreeNode();
-            convertPageToNode(newNodeID, newNode);
+            // IX_BPlusTreeNode* newNode = new IX_BPlusTreeNode();
+            // convertPageToNode(newNodeID, newNode);
+            IX_BPlusTreeNode* newNode = assignNode(newNodeID);
+
             newNode->init(curNode->isLeafNode, curID, curNode->nextNode, curNode->parentNode);
 
             int m = curNode->curNum / 2;
@@ -322,14 +377,16 @@ class IX_IndexHandle {
             // printf("\nm = %d\n", newNode->parentNode);            
             newNode->curNum = curNode->curNum - m;
 
-            for(int i = 0; i < newNode->curNum; ++i) {
-                // printf("move %d\n", *(curNode->getIthKeyPointer(i + m, attrLen)));
-                memcpy(newNode->getIthKeyPointer(i, attrLen), curNode->getIthKeyPointer(i + m, attrLen), attrLen);
-                newNode->setRID(i, curNode->getIthPage(i + m), curNode->getIthSlot(i + m));
+            // for(int i = 0; i < newNode->curNum; ++i) {
+            //     // printf("move %d\n", *(curNode->getIthKeyPointer(i + m, attrLen)));
+            //     memcpy(newNode->getIthKeyPointer(i, attrLen), curNode->getIthKeyPointer(i + m, attrLen), attrLen);
+            //     newNode->setRID(i, curNode->getIthPage(i + m), curNode->getIthSlot(i + m));
 
-                // printf("move %d\n", *(newNode->getIthKeyPointer(i, attrLen)));
-            }
+            //     // printf("move %d\n", *(newNode->getIthKeyPointer(i, attrLen)));
+            // }
 
+            memmove(newNode->getIthKeyPointer(0, attrLen), curNode->getIthKeyPointer(m, attrLen), attrLen * newNode->curNum);
+            memmove(newNode->rids, curNode->rids + 2 * m, 2 * sizeof(uint) * newNode->curNum);
 
 
             curNode->curNum = m;
@@ -353,6 +410,113 @@ class IX_IndexHandle {
 
             return newNode;
 
+
+        }
+
+        int binarySearch(IX_BPlusTreeNode* node, void *pData, AttrType attrType, int attrLen) {
+            int l = 0;
+            int r = node->curNum;
+            while(l < r) {
+                int mid = l + r >> 1;
+                void* tmp_key = node->getIthKeyPointer(mid, attrLen);
+                if(compareAttr(pData, tmp_key, attrType, attrLen) < 0) {
+                    r = mid;
+                } else {
+                    l = mid + 1;
+                }
+            }
+            return l - 1;
+
+        }
+        bool normalInsertEntry(int nodeID, void *pData, RID rid) {
+            int m = fileConfig.maxKeyNum;
+            int attrLen = fileConfig.attrLength;
+            AttrType attrType = fileConfig.attrType;
+
+            // IX_BPlusTreeNode* curNode = new IX_BPlusTreeNode();
+            // convertPageToNode(nodeID, curNode);
+            IX_BPlusTreeNode* curNode = assignNode(nodeID);
+            // auto start = clock();
+            while (!curNode->isLeafNode) {
+                
+                int tmp = binarySearch(curNode, pData, attrType, attrLen);
+                if(tmp < 0) tmp = 0;
+                int new_id = curNode->rids[2 * tmp];
+                convertPageToNode(new_id, curNode);
+            }
+            // down += (double)(clock() - start);
+            // start = clock();
+            // int i;
+            // for(i = curNode->curNum; i > 0; --i) {
+            //     void* tmp_key = curNode->getIthKeyPointer(i - 1, attrLen);
+            //     if(compareAttr(pData, tmp_key, attrType, attrLen) >= 0) 
+            //         break;
+            //     memcpy(curNode->getIthKeyPointer(i, attrLen), curNode->getIthKeyPointer(i - 1, attrLen), attrLen);
+            //     curNode->setRID(i, curNode->getIthPage(i - 1), curNode->getIthSlot(i - 1));
+            // }
+            int tmp = binarySearch(curNode, pData, attrType, attrLen);
+            int i = tmp + 1;
+            int num = curNode->curNum - i;
+            if(num > 0) {
+                memmove(curNode->getIthKeyPointer(i+1 ,attrLen), curNode->getIthKeyPointer(i, attrLen), attrLen * num);
+                memmove(curNode->rids + 2 * (i+1), curNode->rids + 2*i, sizeof(uint) * 2 * num);
+            }
+            memcpy(curNode->getIthKeyPointer(i, attrLen), pData, attrLen);
+            curNode->setRID(i, rid);
+            curNode->curNum += 1;
+
+            
+            // up += (double)(clock() - start);
+
+            IX_BPlusTreeNode* parentNode = nullptr;
+            while(curNode->curNum >= fileConfig.maxKeyNum) {
+                
+                if(curNode->parentNode <= 0) {
+                    int parent = ++fileConfig.curNodeNum;
+                    // convertPageToNode(parent, parentNode);
+                    parentNode = assignNode(parent);
+
+                    fileConfig.rootNode = parent;
+
+                    parentNode->init(false, -1, -1, -1);
+                    memcpy(parentNode->keys, curNode->keys, attrLen);
+                    parentNode->rids[0] = curNode->selfID;
+                    parentNode->curNum = 1;
+                    
+                    curNode->parentNode = parent;
+                } else {
+                    // convertPageToNode(curNode->parentNode, parentNode);
+                    parentNode = assignNode(curNode->parentNode);
+                }
+                IX_BPlusTreeNode* newNode = splitNode(curNode, attrLen);
+                int curWhichChild = whichChild(curNode->selfID, parentNode);
+                for(int i = parentNode->curNum; i > curWhichChild + 1; --i) {
+                    memcpy(parentNode->getIthKeyPointer(i, attrLen), parentNode->getIthKeyPointer(i - 1, attrLen), attrLen);
+                    parentNode->setRID(i, parentNode->getIthPage(i - 1), parentNode->getIthSlot(i - 1));
+                }
+                parentNode->curNum += 1;
+
+                memcpy(parentNode->getIthKeyPointer(curWhichChild, attrLen), curNode->keys, attrLen);
+                memcpy(parentNode->getIthKeyPointer(curWhichChild + 1, attrLen), newNode->keys, attrLen);
+
+                parentNode->setRID(curWhichChild + 1, newNode->selfID, -1);
+                forceWrite(newNode);
+                // delete newNode;
+                releaseNode(newNode);
+
+                forceWrite(curNode);
+                // delete curNode;
+                releaseNode(curNode);
+
+                curNode = parentNode;
+                // nodeID = parentNode->selfID;
+            }
+
+            
+            forceWrite(curNode);
+            // delete curNode;
+            releaseNode(curNode);
+            return true;
 
         }
 
@@ -589,11 +753,13 @@ class IX_IndexHandle {
         }
 
         void modifyParent(int id, int parent) {
+            auto start = clock();
             IX_BPlusTreeNode *tmp = new IX_BPlusTreeNode();
             convertPageToNode(id, tmp);
             tmp->parentNode = parent;
             forceWrite(tmp);
             delete tmp;
+            time_cnt += (double)(clock() - start);
         }
 
         void modifyPrev(int id, int prev){
