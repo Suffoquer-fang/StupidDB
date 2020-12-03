@@ -37,7 +37,7 @@ int main() {
     RID rid;
     
     map<int, RID> test_map;
-    int datasize = 1e6;
+    int datasize = 1e7;
     vector<int> datavec(datasize, 0);
     for(int i = 0; i < datasize; ++i)
         datavec[i] = rand();
@@ -58,23 +58,19 @@ int main() {
     }
 
     cout << (clock() - start) * 1.0/ CLOCKS_PER_SEC << endl;
-    cout << ih->time_cnt / CLOCKS_PER_SEC << endl;
-    cout << ih->down / CLOCKS_PER_SEC << endl;
-    cout << ih->up / CLOCKS_PER_SEC << endl;
-    // for(int i = 49; i >= 0; --i) {
-    //     attr = 2 * i + 1;
-    //     rid.set(i + 1, 2 * i);
-    //     ih->insertEntry(&attr, rid);
-    //     test_map.insert(pair<int, RID>(attr, rid));
-    // }
+    // start = clock();
+    // cout << ih->time_cnt / CLOCKS_PER_SEC << endl;
+    // cout << ih->down / CLOCKS_PER_SEC << endl;
+    // cout << ih->up / CLOCKS_PER_SEC << endl;
+   
 
-    // for(int i = 20; i < 3100; ++i) {
+    // for(int i = 20; i < 31000; ++i) {
     //     attr = datavec[i];
-    //     rid.set(i + 1, 2 * i);
+    //     rid.set(1, 1);
     //     ih->deleteEntry(&attr, rid);
     //     test_map.erase(attr);
     // }
-
+    // cout << (clock() - start) * 1.0/ CLOCKS_PER_SEC << endl;
 
     vector<int> key_vec;
     vector<RID> rid_vec;
@@ -99,33 +95,7 @@ int main() {
 
     }
 
-    // int id, index;
-
-    // attr = 20;
-    // rid.set(1, 2);
-    // ih->insertEntry(&attr, rid);
-    // ih->insertEntry(&attr, rid);
-    // ih->insertEntry(&attr, rid);
-    // attr = 20;
-    // rid.set(4, 2);
-    // ih->insertEntry(&attr, rid);
-    // ih->insertEntry(&attr, rid);
-    // ih->insertEntry(&attr, rid);
-    // printf("%d\n", ih->searchFirstEntry(&attr, id, index));
-    // printf("%d %d\n", id, index);
-    // ih->debug(id);
-
-    // printf("%d\n", ih->searchLastEntry(&attr, id, index));
-    // printf("%d %d\n", id, index);
-    // ih->debug(id);
-
-
-    // IX_IndexScan* is = new IX_IndexScan();
-    // is->openScan(ih, LT, &attr);
-    // puts("open");
-    // while(is->next(rid)) {
-    //     printf("%d %d\n", rid.slotID, rid.pageID);
-    // }
+    
 
 
     im->destroyIndex(name, 1);
