@@ -5,6 +5,7 @@
 #include "utils.h"
 
 class RM_FileHandle {
+
 	int fileID;
 	FileManager *fm;
 	BufPageManager *bpm;
@@ -12,6 +13,7 @@ class RM_FileHandle {
 	RM_FileConfig fileConfig;
 
 	friend class RM_FileScan;
+	friend class SM_SystemManager;
 
    public:
 	RM_FileHandle(FileManager *fm, BufPageManager *bpm, int fileID) {
@@ -54,6 +56,25 @@ class RM_FileHandle {
 		// printf("pp %d %d \n", *pdata, *(pdata + 1));
 		record.setRecord(fileConfig.recordSize, pageID, slotID, pdata);
 
+		return true;
+	}
+
+	bool getRecord(RID rid, unsigned int* &ret) {
+		int pageID = rid.pageID;
+		int slotID = rid.slotID;
+
+		int index;
+		BufType buf = bpm->getPage(this->fileID, pageID, index);
+		bpm->access(index);
+
+		if (slotID >= fileConfig.maxPageRecordNum) return false;
+		unsigned int *bitmap = buf + fileConfig.pageConfigSize;
+		if (!getBitFromLeft(bitmap, slotID, fileConfig.maxPageRecordNum))
+			return false;
+
+		unsigned int *pdata = buf + recordOff(slotID);
+		// printf("pp %d %d \n", *pdata, *(pdata + 1));
+		ret = pdata;
 		return true;
 	}
 

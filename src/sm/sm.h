@@ -114,21 +114,19 @@ class SM_SystemManager {
             ix->openIndex(tableName.c_str(), attrID, indexID);
             IX_IndexHandle* ih = ix->getIndexHandle(indexID);
 
-
+            RM_FileScan *scan = new RM_FileScan();
+            scan->OpenScan(fh, attrInfo.attrType, attrInfo.attrLen, attrInfo.offset, NO_OP, nullptr);
+            
+            uint *data = new uint[fh->fileConfig.recordSize];
             RID rid;
-            Record rec;
-            rid.set(1, 0);
-
             while(true) {
-                if(fh->getRecord(rid, rec)) {
-                    uint *pData;
-                    rec.getData(pData);
-                    pData += attrInfo.offset;
-                    ih->insertEntry(pData, rid);
-                    // delete [] pData;
-                }
-                if(!fh->getNextRID(rid)) break;
+                if(!scan->next(data, rid)) break;
+
+                char* pData = ((char*)data) + attrInfo.offset;
+                ih->insertEntry(pData, rid);
             }
+            delete [] data;
+            delete scan;
 
             delete ih;
             delete fh;

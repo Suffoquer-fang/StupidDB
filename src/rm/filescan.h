@@ -11,7 +11,7 @@ class RM_FileScan {
 	int attrOff;
 
 	RID curRID;
-	BufType curBuf;
+	unsigned int* curData;
 
 	RM_FileScan() {
 	}
@@ -28,14 +28,47 @@ class RM_FileScan {
 		this->attrOff = attrOffset;
 
 		curRID.set(1, -1);
+		curData = nullptr;
 	}
 
-	bool next() {
+	bool nextRecord() {
+		bool ret = fh->getNextValidRID(curRID);
+		if(!ret) {
+			curData = nullptr;
+			return false;
+		}
+		fh->getRecord(curRID, curData);
+		return true;
+	}
+	bool next(unsigned int* ret) {
+		while(true) {
+			if(!nextRecord()) return false;
+			if(satisfy()) break;
+		}
+		memcpy(ret, curData, fh->fileConfig.recordSize * sizeof(uint));
+		return true;
+	}
 
+	bool next(unsigned int* ret, RID &rid) {
+		bool ret = next(ret);
+		if(ret)
+			rid.set(curRID.pageID, curRID.slotID);
+		else 
+			rid.set(-1, -1);
+		return ret;
 	}
 
 	bool satisfy() {
-		
+		if(!curData) return false;
+		char* pData = ((char*)curData) + attrOff;
+		int tmp = compareAttr(pData, value, attrType, attrLen);
+		if (op == EQ) return tmp == 0;
+		if (op == GE) return tmp >= 0;
+		if (op == LE) return tmp <= 0;
+		if (op == GT) return tmp > 0;
+		if (op == LT) return tmp < 0;
+		if (op == NE) return tmp != 0;
+		if (op == NO_OP) return true;
 	}
 
 
