@@ -26,6 +26,7 @@
 
 using namespace std;
 
+unsigned char h[61];
 int main() {
 	MyBitMap::initConst();   //新加的初始化
 	FileManager* fm = new FileManager();

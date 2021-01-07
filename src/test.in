@@ -1,0 +1,15 @@
+use myDB;
+create table testTable (a INT(4), b VARCHAR(10), c INT(4));
+show tables;
+
+
+insert into testTable values (NULL, '6634588', NULL);
+insert into testTable values (1234, '1234', 6666);
+insert into testTable values (NULL, '56789', NULL);
+insert into testTable values (5555, '56789', 5555);
+insert into testTable values (6666, NULL, 6667);
+insert into testTable values (6666, NULL, 6665);
+select * from testTable where b is not NULL;
+delete from testTable where a is NULL;
+select * from testTable where b is not NULL;
+drop table testTable;

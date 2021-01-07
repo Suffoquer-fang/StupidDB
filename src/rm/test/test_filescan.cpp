@@ -42,7 +42,7 @@ int main() {
 
     RM_FileScan* fs = new RM_FileScan();
     int value = 980;
-    fs->OpenScan(fh, INTEGER, 4, 0, GT, &value);
+    fs->OpenScan(fh, INTEGER_TYPE, 4, 0, NO_OP, &value);
 
     while(true) {
         if(fs->next(data)) {

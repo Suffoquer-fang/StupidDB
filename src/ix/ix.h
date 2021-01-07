@@ -1,3 +1,4 @@
+#pragma once
 #include "../filesystem/fs.h"
 #include "indexhandle.h"
 #include "indexscan.h"

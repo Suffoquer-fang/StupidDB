@@ -4,6 +4,8 @@
 #include <cstring>
 #include <cassert>
 
+
+unsigned char h[61];
 int main() {
     puts("Test Record Manager");
     

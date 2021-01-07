@@ -1,5 +1,16 @@
 {
     "files.associations": {
-        "cstring": "cpp"
+        "*.h": "cpp",
+        "cstring": "cpp",
+        "iostream": "cpp",
+        "new": "cpp",
+        "ostream": "cpp",
+        "cassert": "cpp",
+        "*.tcc": "cpp",
+        "deque": "cpp",
+        "string": "cpp",
+        "unordered_map": "cpp",
+        "vector": "cpp",
+        "bitset": "cpp"
     }
 }

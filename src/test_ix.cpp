@@ -10,6 +10,7 @@
 
 
 
+unsigned char h[61];
 int main() {
 
     MyBitMap::initConst();
@@ -20,7 +21,7 @@ int main() {
     IX_IndexManager* im = new IX_IndexManager(fm, bpm);
     
     int fileID;
-    im->createIndex(name, 1, INTEGER, 4);
+    im->createIndex(name, 1, INTEGER_TYPE, 4);
     im->openIndex(name, 1, fileID);
 
     IX_IndexHandle *ih = im->getIndexHandle(fileID);
@@ -37,7 +38,7 @@ int main() {
     RID rid;
     
     map<int, RID> test_map;
-    int datasize = 1e7;
+    int datasize = 1e6;
     vector<int> datavec(datasize, 0);
     for(int i = 0; i < datasize; ++i)
         datavec[i] = rand();
@@ -89,8 +90,8 @@ int main() {
             printf("%u-(%d-%d) ", it->first, (it->second).pageID, (it->second).slotID);
             printf("%u-(%d-%d)\n", (uint)(key_vec[i]), rid_vec[i].pageID, rid_vec[i].slotID);
         }
-        // assert((it->second).pageID == rid_vec[i].pageID);
-        // assert((it->second).slotID == rid_vec[i].slotID);
+        assert((it->second).pageID == rid_vec[i].pageID);
+        assert((it->second).slotID == rid_vec[i].slotID);
         i += 1;
 
     }

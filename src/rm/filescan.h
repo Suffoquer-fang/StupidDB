@@ -1,3 +1,4 @@
+#pragma once
 #include "../utils/constants.h"
 #include "filehandle.h"
 
@@ -28,12 +29,14 @@ class RM_FileScan {
 		this->attrOff = attrOffset;
 
 		curRID.set(1, -1);
-		curData = nullptr;
+		curData = new uint[fh->fileConfig.recordSize]; 
 	}
 
 	bool nextRecord() {
+		// cout << curRID.slotID << endl;
 		bool ret = fh->getNextValidRID(curRID);
 		if(!ret) {
+			delete [] curData;
 			curData = nullptr;
 			return false;
 		}
@@ -50,31 +53,33 @@ class RM_FileScan {
 	}
 
 	bool next(unsigned int* ret, RID &rid) {
-		bool ret = next(ret);
+		bool r = next(ret);
+		if(!r) cout << "fuck" << endl;
 		if(ret)
 			rid.set(curRID.pageID, curRID.slotID);
 		else 
 			rid.set(-1, -1);
-		return ret;
+		return r;
 	}
 
 	bool satisfy() {
 		if(!curData) return false;
+		if (op == NO_OP) return true;
 		char* pData = ((char*)curData) + attrOff;
 		int tmp = compareAttr(pData, value, attrType, attrLen);
-		if (op == EQ) return tmp == 0;
-		if (op == GE) return tmp >= 0;
-		if (op == LE) return tmp <= 0;
-		if (op == GT) return tmp > 0;
-		if (op == LT) return tmp < 0;
-		if (op == NE) return tmp != 0;
-		if (op == NO_OP) return true;
+		if (op == EQ_OP) return tmp == 0;
+		if (op == GE_OP) return tmp >= 0;
+		if (op == LE_OP) return tmp <= 0;
+		if (op == GT_OP) return tmp > 0;
+		if (op == LT_OP) return tmp < 0;
+		if (op == NE_OP) return tmp != 0;
+		
 	}
 
 
 
-	bool GetNextRec(Record &rec) {
+	// bool GetNextRec(Record &rec) {
 
-	}
+	// }
 	bool CloseScan();
 };

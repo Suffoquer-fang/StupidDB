@@ -1,3 +1,4 @@
+#pragma once
 #include "../filesystem/fs.h"
 #include "filehandle.h"
 #include "filescan.h"

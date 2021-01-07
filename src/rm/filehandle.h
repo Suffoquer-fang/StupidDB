@@ -14,6 +14,7 @@ class RM_FileHandle {
 
 	friend class RM_FileScan;
 	friend class SM_SystemManager;
+	friend class Table;
 
    public:
 	RM_FileHandle(FileManager *fm, BufPageManager *bpm, int fileID) {
@@ -59,7 +60,7 @@ class RM_FileHandle {
 		return true;
 	}
 
-	bool getRecord(RID rid, unsigned int* &ret) {
+	bool getRecord(RID rid, unsigned int* ret) {
 		int pageID = rid.pageID;
 		int slotID = rid.slotID;
 
@@ -74,7 +75,8 @@ class RM_FileHandle {
 
 		unsigned int *pdata = buf + recordOff(slotID);
 		// printf("pp %d %d \n", *pdata, *(pdata + 1));
-		ret = pdata;
+		// ret = pdata;
+		memcpy(ret, pdata, fileConfig.recordSize * sizeof(uint));
 		return true;
 	}
 
@@ -129,7 +131,7 @@ class RM_FileHandle {
 			updateFreePage(pageID);
 		}
 		if (curRecordNum == 0) {
-			fileConfig.curPageNum -= 1;
+			// fileConfig.curPageNum -= 1;
 			updateFileConfig();
 		}
 		bpm->markDirty(index);

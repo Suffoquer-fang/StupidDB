@@ -20,15 +20,16 @@ class IX_IndexScan {
 		this->op = op;
 		this->value = value;
 
-		if (op == EQ || op == GE) {
+		if (op == EQ_OP || op == GE_OP) {
 			ih->searchFirstEntry(value, curID, curIndex);
 			ih->convertPageToNode(curID, node);
-		} else if (op == GT) {
+		} else if (op == GT_OP) {
 			ih->searchLastEntry(value, curID, curIndex);
 			ih->convertPageToNode(curID, node);
 		} else {
 			ih->getFirstEntry(node);
 			curID = node->selfID;
+			curIndex = 0;
 		}
 	}
 	bool hasNextEntry() {
@@ -62,27 +63,29 @@ class IX_IndexScan {
 	}
 
 	bool satisfy() {
+		if(curIndex < 0) return false;
 		int tmp = compareAttr(
 			node->getIthKeyPointer(curIndex, ih->fileConfig.attrLength), value,
 			ih->fileConfig.attrType, ih->fileConfig.attrLength);
-		if (op == EQ) return tmp == 0;
-		if (op == GE) return tmp >= 0;
-		if (op == LE) return tmp <= 0;
-		if (op == GT) return tmp > 0;
-		if (op == LT) return tmp < 0;
-		if (op == NE) return tmp != 0;
+		if (op == EQ_OP) return tmp == 0;
+		if (op == GE_OP) return tmp >= 0;
+		if (op == LE_OP) return tmp <= 0;
+		if (op == GT_OP) return tmp > 0;
+		if (op == LT_OP) return tmp < 0;
+		if (op == NE_OP) return tmp != 0;
 		if (op == NO_OP) return true;
 	}
 
 	bool stop() {
+		bool ret = hasNextEntry();
+		if (!ret) return true;
 		int tmp = compareAttr(
 			node->getIthKeyPointer(curIndex, ih->fileConfig.attrLength), value,
 			ih->fileConfig.attrType, ih->fileConfig.attrLength);
-		bool ret = hasNextEntry();
-		if (!ret) return true;
-		if (op == EQ && tmp > 0) return true;
-		if (op == LT && tmp >= 0) return true;
-		if (op == LE && tmp > 0) return true;
+		
+		if (op == EQ_OP && tmp > 0) return true;
+		if (op == LT_OP && tmp >= 0) return true;
+		if (op == LE_OP && tmp > 0) return true;
 		return false;
 	}
 

@@ -8,10 +8,11 @@
 #include <map>
 #include <iostream>
 #include <fstream>
+
 using namespace std;
 
 class SM_SystemManager {
-    private:
+    public:
         DBConfig dbConfig;
         map<string, int> fileIDMap;
 
@@ -29,7 +30,8 @@ class SM_SystemManager {
         bool openDB(const char *dbName) {
             cout << "openDB" << endl;
             chdir(dbName);
-            cout << "read ";
+            // cout << "read " << dbName << " ";
+            dbConfig.dbName = string(dbName);
             bool ret = readDBConfigFromMeta();
             if(!ret) return false;
 
@@ -49,12 +51,19 @@ class SM_SystemManager {
             }
             fileIDMap.clear();
             return true;
-        }              
+        }
+
+
 
         bool createTable(Table table) {
             cout << "create" << endl;
+
+            table.rm = rm;
+            table.ix = ix;
+
             for(int i = 0; i < dbConfig.tableNum; ++i) {
                 if(dbConfig.tableVec[i].tableName == table.tableName) {
+                    cout << "already" << endl;
                     return false;
                 }
             }
@@ -70,6 +79,11 @@ class SM_SystemManager {
                     ix->createIndex(table.tableName.c_str(), i, attrInfo.attrType, attrInfo.attrLen);
                 }
             }
+
+            int fileID;
+            rm->openFile(table.tableName.c_str(), fileID);
+            fileIDMap[table.tableName] = fileID;
+
             return true;
         }
 
@@ -93,72 +107,89 @@ class SM_SystemManager {
             return true;
         }   
 
-        bool createIndex (const string tableName, const string attr) {
+        bool addPrimaryKey(const string tableName, const string attr) {
             int tableID = findTable(tableName);
             if(tableID == -1) return false;
-
-            int attrID = findAttrFromTable(attr, tableID);
-            if(attrID == -1) return false;
-
-            AttrInfo attrInfo = dbConfig.tableVec[tableID].attrVec[attrID];
-
-            if(attrInfo.hasIndex) return false;
-            dbConfig.tableVec[tableID].attrVec[attrID].hasIndex = true;
 
             int fileID = fileIDMap[tableName];
-            RM_FileHandle* fh = rm->getFileHandle(fileID);
-
-            
-            ix->createIndex(tableName.c_str(), attrID, attrInfo.attrType, attrInfo.attrLen);
-            int indexID;
-            ix->openIndex(tableName.c_str(), attrID, indexID);
-            IX_IndexHandle* ih = ix->getIndexHandle(indexID);
-
-            RM_FileScan *scan = new RM_FileScan();
-            scan->OpenScan(fh, attrInfo.attrType, attrInfo.attrLen, attrInfo.offset, NO_OP, nullptr);
-            
-            uint *data = new uint[fh->fileConfig.recordSize];
-            RID rid;
-            while(true) {
-                if(!scan->next(data, rid)) break;
-
-                char* pData = ((char*)data) + attrInfo.offset;
-                ih->insertEntry(pData, rid);
-            }
-            delete [] data;
-            delete scan;
-
-            delete ih;
+            RM_FileHandle *fh = rm->getFileHandle(fileID);
+            bool ret = dbConfig.tableVec[tableID].addPrimaryKey(attr, fh);
             delete fh;
-
-            ix->closeIndex(indexID);
-            return true;
-
+            return ret;
         }
 
 
-        bool dropIndex(const string tableName, const string attr) {
+
+        bool checkValidRecord(string tableName, void* pData) {
+            return true;
+        }
+
+        bool insertIntoTable(string tableName, void* pData) {
             int tableID = findTable(tableName);
             if(tableID == -1) return false;
 
-            int attrID = findAttrFromTable(attr, tableID);
-            if(attrID == -1) return false;
+            if(!checkValidRecord(tableName, pData)) return false;
 
-            if(dbConfig.tableVec[tableID].attrVec[attrID].hasIndex == false)
-                return false;
-            dbConfig.tableVec[tableID].attrVec[attrID].hasIndex = false;
-            ix->destroyIndex(tableName.c_str(), attrID);
+            int fileID = fileIDMap[tableName];
+            RM_FileHandle *fh = rm->getFileHandle(fileID);
+            bool ret = dbConfig.tableVec[tableID].insertRecord(pData, fh);
 
+            delete fh;
+            return ret;
+        }
+
+
+
+        bool selectFromTable(string tableName, Conditions conds) {
+            int tableID = findTable(tableName);
+            if(tableID == -1) return false;
+
+            vector<RID> rids;
+            int fileID = fileIDMap[tableName];
+            RM_FileHandle *fh = rm->getFileHandle(fileID);
+            dbConfig.tableVec[tableID].selectRIDs(rids, conds, fh);
+
+            for(int i = 0; i < rids.size(); ++i) {
+                cout << dbConfig.tableVec[tableID].stringfy(rids[i], fh) << endl;
+            }
+            delete fh;
             return true;
         }
-        
+
+
+        bool deleteFromTable(string tableName, Conditions conds) {
+            int tableID = findTable(tableName);
+            if(tableID == -1) return false;
+
+            vector<RID> rids;
+            int fileID = fileIDMap[tableName];
+            RM_FileHandle *fh = rm->getFileHandle(fileID);
+            dbConfig.tableVec[tableID].selectRIDs(rids, conds, fh);
+            dbConfig.tableVec[tableID].deleteRecords(rids, fh);
+
+            delete fh;
+            return true;
+            
+        }
+
+        void showTables() {
+            cout << "----------------------------------" << endl;
+            for(int i = 0; i < dbConfig.tableNum; ++i) {
+
+                cout << dbConfig.tableVec[i].tableName << endl;
+            }
+
+            cout << "----------------------------------" << endl;
+        }
+
+    
 
         bool readDBConfigFromMeta() {
             cout << "read ";
             ifstream ism;
             
             ism.open("meta.db");
-            ism >> dbConfig.dbName;
+            // ism >> dbConfig.dbName;
             ism >> dbConfig.tableNum;
 
             for(int i = 0; i < dbConfig.tableNum; ++i) {
@@ -169,22 +200,8 @@ class SM_SystemManager {
 
                 for(int j = 0; j < table.attrNum; ++j) {
                     AttrInfo attrInfo;
-                    ism >> attrInfo.attrName;
-                    ism >> attrInfo.attrLen;
-
-                    string tmp;
-                    ism >> tmp;
-                    if(tmp == "INTEGER") {
-                        attrInfo.attrType = INTEGER;
-                    } else if(tmp == "FLOAT") {
-                        attrInfo.attrType = FLOAT;
-                    } else {
-                        attrInfo.attrType = STRING;
-                    }
-                    ism >> attrInfo.offset;
-
-                    ism >> tmp;
-                    attrInfo.hasIndex = tmp != "NOT";
+                    ism >> attrInfo;
+                    // cout << "read: " << AttrType2Str(attrInfo.attrType) << endl;
 
                     table.attrVec.push_back(attrInfo);
                 }
@@ -200,7 +217,7 @@ class SM_SystemManager {
         bool writeDBConfigToMeta() {
             ofstream outfile;
             outfile.open("meta.db");
-            outfile << dbConfig.dbName << endl;
+            // outfile << dbConfig.dbName << endl;
             outfile << dbConfig.tableNum << endl;
 
             for(int i = 0; i < dbConfig.tableNum; ++i) {
@@ -210,32 +227,14 @@ class SM_SystemManager {
                 outfile << table.recordSize << endl;
 
                 for(int j = 0; j < table.attrNum; ++j) {
-                    
-                    outfile << stringfy(table.attrVec[j]);
+                    outfile << table.attrVec[j];
                 }
             }
             outfile.close();
         }
 
-        string stringfy(AttrInfo attrInfo) {
-            string ret = "";
-            ret += attrInfo.attrName + "\n";
-            ret += to_string(attrInfo.attrLen) + "\n";
 
-            if(attrInfo.attrType == INTEGER) {
-                ret += "INTEGER\n";
-            } else if(attrInfo.attrType == FLOAT) {
-                ret += "FLOAT\n";
-            } else 
-                ret += "STRING\n";
-
-            ret += to_string(attrInfo.offset) + "\n";
-            ret += attrInfo.hasIndex ? "INDEX\n" : "NOT\n";
-            return ret;
-        }
-
-        
-
+    
         int findTable(const string tableName) {
             // int ret = -1;
             for(int i = 0; i < dbConfig.tableNum; ++i) {
@@ -245,15 +244,6 @@ class SM_SystemManager {
             return -1;
         }
 
-        int findAttrFromTable(const string attr, int tableID) {
-            Table table = dbConfig.tableVec[tableID];
-
-            for(int i = 0; i < table.attrNum; ++i) {
-                if(table.attrVec[i].attrName == attr) {
-                    return i;
-                }
-            }
-            return -1;
-        }
+        
 
 };
