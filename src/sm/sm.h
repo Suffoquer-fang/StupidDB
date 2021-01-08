@@ -140,7 +140,19 @@ class SM_SystemManager {
 
 
 
-        bool selectFromTable(string tableName, Conditions conds) {
+        bool selectFromTable(string tableName, Conditions conds, vector<RID> &ret) {
+            int tableID = findTable(tableName);
+            if(tableID == -1) return false;
+
+            int fileID = fileIDMap[tableName];
+            RM_FileHandle *fh = rm->getFileHandle(fileID);
+            dbConfig.tableVec[tableID].selectRIDs(ret, conds, fh);
+
+            delete fh;
+            return true;
+        }
+
+        bool selectFromTableAndPrint(string tableName, Conditions conds) {
             int tableID = findTable(tableName);
             if(tableID == -1) return false;
 
@@ -170,6 +182,23 @@ class SM_SystemManager {
             delete fh;
             return true;
             
+        }
+
+        bool updateTable(string tableName, vector<Condition>& sets, Conditions conds) {
+            int tableID = findTable(tableName);
+            if(tableID == -1) return false;
+
+            vector<RID> rids;
+            int fileID = fileIDMap[tableName];
+            RM_FileHandle *fh = rm->getFileHandle(fileID);
+
+            dbConfig.tableVec[tableID].selectRIDs(rids, conds, fh);
+            
+
+            for(int i = 0; i < rids.size(); ++i) {
+                dbConfig.tableVec[tableID].updateRecord(rids[i], sets, fh);
+            }
+
         }
 
         void showTables() {

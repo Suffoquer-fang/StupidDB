@@ -127,6 +127,7 @@ struct Condition {
 
 struct Conditions {
     vector<Condition> conds;
+
     void addCond(Condition a) {
         conds.push_back(a);
     }
@@ -304,6 +305,32 @@ class Table {
         return ret;
     }
 
+    bool deleteRecord(RID rid, RM_FileHandle* fh) {
+        char* data = new char [recordSize];
+        fh->getRecord(rid, (uint*)data);
+
+        for(int i = 0; i < attrNum; ++i) {
+            char* attr = data + attrVec[i].offset;
+
+            if(attrVec[i].hasIndex) {
+                deleteRecordIndex(attr, rid, i);
+            }
+        }  
+        fh->deleteRecord(rid);
+        delete [] data;
+        return true;   
+    }
+
+    bool deleteRecordIndex(void* attr, RID rid, int attrID) {
+        int indexID;
+        ix->openIndex(tableName.c_str(), attrID, indexID);
+        IX_IndexHandle *ih = ix->getIndexHandle(indexID);
+
+        bool ret = ih->deleteEntry(attr, rid);
+        delete ih;
+        return ret;
+    }
+
     bool checkRecordIndexExist(void* attr, int attrID) {
         int indexID;
         ix->openIndex(tableName.c_str(), attrID, indexID);
@@ -330,7 +357,7 @@ class Table {
     bool deleteRecords(vector<RID> rid, RM_FileHandle* fh) {
         bool ret = true;
         for(int i = 0; i < rid.size(); ++i) {
-            ret = fh->deleteRecord(rid[i]);
+            ret = deleteRecord(rid[i], fh);
             if(!ret) {
                 break;
             }
@@ -338,8 +365,27 @@ class Table {
         return ret;
     }
 
-    bool updateRecord(RID rid, RM_FileHandle* fh) {
+    bool updateRecord(RID rid, vector<Condition>& sets, RM_FileHandle* fh) {
+        char* data = new char [recordSize];
+        char* pdata = new char [recordSize];
+        fh->getRecord(rid, (uint*)data);
+        
+        memcpy(pdata, data, recordSize);
 
+        for(int i = 0; i < sets.size(); ++i) {
+            memcpy(pdata + sets[i].offset, sets[i].value, sets[i].attrLen);
+        }
+
+
+        deleteRecord(rid, fh);
+        if(!checkValidRecord(pdata)) {
+            insertRecord(data, fh);
+        } else {
+            insertRecord(pdata, fh);
+        }
+
+        delete [] data;
+        return true;
     }
 
 

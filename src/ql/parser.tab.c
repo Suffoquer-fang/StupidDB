@@ -475,15 +475,15 @@ static const yytype_uint8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,    48,    48,    50,    53,    55,    57,    59,    61,    64,
-      67,    68,    69,    72,    76,    79,    82,    83,    86,    89,
-      92,    99,   100,   103,   106,   112,   115,   118,   121,   124,
-     127,   130,   133,   136,   142,   143,   147,   151,   155,   159,
-     163,   167,   176,   180,   184,   188,   195,   196,   200,   201,
-     205,   210,   214,   218,   222,   227,   233,   242,   245,   251,
-     255,   263,   266,   271,   271,   271,   271,   271,   271,   274,
-     275,   279,   280,   284,   285,   291,   296,   304,   311,   320,
-     322,   324,   326,   328,   330
+       0,    50,    50,    52,    55,    57,    59,    61,    63,    66,
+      69,    70,    71,    74,    78,    81,    84,    85,    88,    91,
+      94,   101,   102,   105,   108,   114,   117,   120,   123,   126,
+     129,   132,   135,   138,   144,   145,   149,   153,   157,   161,
+     165,   169,   178,   182,   186,   190,   197,   198,   202,   203,
+     207,   212,   216,   220,   224,   229,   235,   244,   247,   253,
+     257,   265,   268,   273,   273,   273,   273,   273,   273,   276,
+     277,   281,   287,   296,   297,   303,   308,   316,   323,   332,
+     334,   336,   338,   340,   342
 };
 #endif
 
@@ -1385,13 +1385,13 @@ yyreduce:
   switch (yyn)
     {
         case 10:
-#line 67 "parser.y" /* yacc.c:1646  */
+#line 69 "parser.y" /* yacc.c:1646  */
     {printf("Create\n");}
 #line 1391 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 12:
-#line 69 "parser.y" /* yacc.c:1646  */
+#line 71 "parser.y" /* yacc.c:1646  */
     {
       qm->useDatabase((yyvsp[0].id));
     }
@@ -1399,13 +1399,13 @@ yyreduce:
     break;
 
   case 13:
-#line 72 "parser.y" /* yacc.c:1646  */
+#line 74 "parser.y" /* yacc.c:1646  */
     {qm->showTables();}
 #line 1405 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 14:
-#line 76 "parser.y" /* yacc.c:1646  */
+#line 78 "parser.y" /* yacc.c:1646  */
     {
         qm->createTable((yyvsp[-3].id), (yyvsp[-1].fieldList));
       }
@@ -1413,7 +1413,7 @@ yyreduce:
     break;
 
   case 15:
-#line 79 "parser.y" /* yacc.c:1646  */
+#line 81 "parser.y" /* yacc.c:1646  */
     {
         qm->dropTable((yyvsp[0].id));
     }
@@ -1421,7 +1421,7 @@ yyreduce:
     break;
 
   case 17:
-#line 83 "parser.y" /* yacc.c:1646  */
+#line 85 "parser.y" /* yacc.c:1646  */
     {
         qm->insertIntoTable((yyvsp[-2].id), (yyvsp[0].valueLists));
     }
@@ -1429,7 +1429,7 @@ yyreduce:
     break;
 
   case 18:
-#line 86 "parser.y" /* yacc.c:1646  */
+#line 88 "parser.y" /* yacc.c:1646  */
     {
         qm->deleteFromTable((yyvsp[-2].id), (yyvsp[0].whereClauseList));
     }
@@ -1437,15 +1437,15 @@ yyreduce:
     break;
 
   case 19:
-#line 89 "parser.y" /* yacc.c:1646  */
+#line 91 "parser.y" /* yacc.c:1646  */
     {
-        qm->updateTable();
+        qm->updateTable((yyvsp[-4].id), (yyvsp[-2].setClauseList), (yyvsp[0].whereClauseList));
     }
 #line 1445 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 20:
-#line 93 "parser.y" /* yacc.c:1646  */
+#line 95 "parser.y" /* yacc.c:1646  */
     {
         qm->selectFromTables((yyvsp[-4].selector), (yyvsp[-2].tableList), (yyvsp[0].whereClauseList));
       }
@@ -1453,13 +1453,13 @@ yyreduce:
     break;
 
   case 21:
-#line 99 "parser.y" /* yacc.c:1646  */
+#line 101 "parser.y" /* yacc.c:1646  */
     {printf("create index\n"); for(int i = 0; i < (yyvsp[-1].colList).size(); ++i) (yyvsp[-1].colList)[i].debug();}
 #line 1459 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 22:
-#line 100 "parser.y" /* yacc.c:1646  */
+#line 102 "parser.y" /* yacc.c:1646  */
     {
       qm->dropIndex();
     }
@@ -1467,7 +1467,7 @@ yyreduce:
     break;
 
   case 23:
-#line 103 "parser.y" /* yacc.c:1646  */
+#line 105 "parser.y" /* yacc.c:1646  */
     {
       qm->alterAddIndex();
     }
@@ -1475,7 +1475,7 @@ yyreduce:
     break;
 
   case 24:
-#line 106 "parser.y" /* yacc.c:1646  */
+#line 108 "parser.y" /* yacc.c:1646  */
     {
       qm->alterDropIndex();
     }
@@ -1483,7 +1483,7 @@ yyreduce:
     break;
 
   case 25:
-#line 112 "parser.y" /* yacc.c:1646  */
+#line 114 "parser.y" /* yacc.c:1646  */
     {
         qm->alterAddfield();
       }
@@ -1491,7 +1491,7 @@ yyreduce:
     break;
 
   case 26:
-#line 115 "parser.y" /* yacc.c:1646  */
+#line 117 "parser.y" /* yacc.c:1646  */
     {
       qm->alterAddCol();
     }
@@ -1499,7 +1499,7 @@ yyreduce:
     break;
 
   case 27:
-#line 118 "parser.y" /* yacc.c:1646  */
+#line 120 "parser.y" /* yacc.c:1646  */
     {
       qm->alterChange();
     }
@@ -1507,7 +1507,7 @@ yyreduce:
     break;
 
   case 28:
-#line 121 "parser.y" /* yacc.c:1646  */
+#line 123 "parser.y" /* yacc.c:1646  */
     {
       qm->alterRename();
     }
@@ -1515,7 +1515,7 @@ yyreduce:
     break;
 
   case 29:
-#line 124 "parser.y" /* yacc.c:1646  */
+#line 126 "parser.y" /* yacc.c:1646  */
     {
       qm->alterDropPrimaryKey();
     }
@@ -1523,7 +1523,7 @@ yyreduce:
     break;
 
   case 30:
-#line 127 "parser.y" /* yacc.c:1646  */
+#line 129 "parser.y" /* yacc.c:1646  */
     {
       qm->alterAddPrimaryKey();
     }
@@ -1531,7 +1531,7 @@ yyreduce:
     break;
 
   case 31:
-#line 130 "parser.y" /* yacc.c:1646  */
+#line 132 "parser.y" /* yacc.c:1646  */
     {
       qm->alterDropPrimaryKey();
     }
@@ -1539,7 +1539,7 @@ yyreduce:
     break;
 
   case 32:
-#line 133 "parser.y" /* yacc.c:1646  */
+#line 135 "parser.y" /* yacc.c:1646  */
     {
       qm->alterAddForeignKey();
     }
@@ -1547,7 +1547,7 @@ yyreduce:
     break;
 
   case 33:
-#line 136 "parser.y" /* yacc.c:1646  */
+#line 138 "parser.y" /* yacc.c:1646  */
     {
       qm->alterDropForeignKey();
     }
@@ -1555,19 +1555,19 @@ yyreduce:
     break;
 
   case 34:
-#line 142 "parser.y" /* yacc.c:1646  */
+#line 144 "parser.y" /* yacc.c:1646  */
     {(yyval.fieldList).push_back((yyvsp[0]._field));}
 #line 1561 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 35:
-#line 143 "parser.y" /* yacc.c:1646  */
+#line 145 "parser.y" /* yacc.c:1646  */
     {(yyval.fieldList).push_back((yyvsp[0]._field));}
 #line 1567 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 36:
-#line 147 "parser.y" /* yacc.c:1646  */
+#line 149 "parser.y" /* yacc.c:1646  */
     {
         (yyval._field).colName = (yyvsp[-1].id);
         (yyval._field).type = (yyvsp[0]._type);
@@ -1576,7 +1576,7 @@ yyreduce:
     break;
 
   case 37:
-#line 151 "parser.y" /* yacc.c:1646  */
+#line 153 "parser.y" /* yacc.c:1646  */
     {
         (yyval._field).colName = (yyvsp[-3].id);
         (yyval._field).type = (yyvsp[-2]._type);
@@ -1585,7 +1585,7 @@ yyreduce:
     break;
 
   case 38:
-#line 155 "parser.y" /* yacc.c:1646  */
+#line 157 "parser.y" /* yacc.c:1646  */
     {
         (yyval._field).colName = (yyvsp[-3].id);
         (yyval._field).type = (yyvsp[-2]._type);
@@ -1594,7 +1594,7 @@ yyreduce:
     break;
 
   case 39:
-#line 159 "parser.y" /* yacc.c:1646  */
+#line 161 "parser.y" /* yacc.c:1646  */
     {
         (yyval._field).colName = (yyvsp[-5].id);
         (yyval._field).type = (yyvsp[-4]._type);
@@ -1603,7 +1603,7 @@ yyreduce:
     break;
 
   case 40:
-#line 163 "parser.y" /* yacc.c:1646  */
+#line 165 "parser.y" /* yacc.c:1646  */
     {
         (yyval._field).isPrimaryKey = true;
         (yyval._field).colList = (yyvsp[-1].colList);
@@ -1612,7 +1612,7 @@ yyreduce:
     break;
 
   case 41:
-#line 167 "parser.y" /* yacc.c:1646  */
+#line 169 "parser.y" /* yacc.c:1646  */
     {
         (yyval._field).isForeignKey = true;
         (yyval._field).colName = (yyvsp[-6].id);
@@ -1623,7 +1623,7 @@ yyreduce:
     break;
 
   case 42:
-#line 176 "parser.y" /* yacc.c:1646  */
+#line 178 "parser.y" /* yacc.c:1646  */
     {
         (yyval._type).type = INTEGER_TYPE;
         (yyval._type).attrLen = 4;
@@ -1632,7 +1632,7 @@ yyreduce:
     break;
 
   case 43:
-#line 180 "parser.y" /* yacc.c:1646  */
+#line 182 "parser.y" /* yacc.c:1646  */
     {
         (yyval._type).type = STRING_TYPE;
         (yyval._type).attrLen = 10;
@@ -1641,7 +1641,7 @@ yyreduce:
     break;
 
   case 44:
-#line 184 "parser.y" /* yacc.c:1646  */
+#line 186 "parser.y" /* yacc.c:1646  */
     {
         (yyval._type).type = STRING_TYPE;
         (yyval._type).attrLen = 10;
@@ -1650,7 +1650,7 @@ yyreduce:
     break;
 
   case 45:
-#line 188 "parser.y" /* yacc.c:1646  */
+#line 190 "parser.y" /* yacc.c:1646  */
     {
         (yyval._type).type = FLOAT_TYPE;
         (yyval._type).attrLen = 4;
@@ -1659,31 +1659,31 @@ yyreduce:
     break;
 
   case 46:
-#line 195 "parser.y" /* yacc.c:1646  */
+#line 197 "parser.y" /* yacc.c:1646  */
     {(yyval.valueLists).push_back((yyvsp[-1].valueList));}
 #line 1665 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 47:
-#line 196 "parser.y" /* yacc.c:1646  */
+#line 198 "parser.y" /* yacc.c:1646  */
     {(yyval.valueLists).push_back((yyvsp[-1].valueList));}
 #line 1671 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 48:
-#line 200 "parser.y" /* yacc.c:1646  */
+#line 202 "parser.y" /* yacc.c:1646  */
     {(yyval.valueList).push_back((yyvsp[0]._value));}
 #line 1677 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 49:
-#line 201 "parser.y" /* yacc.c:1646  */
+#line 203 "parser.y" /* yacc.c:1646  */
     {(yyval.valueList).push_back((yyvsp[0]._value));}
 #line 1683 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 50:
-#line 205 "parser.y" /* yacc.c:1646  */
+#line 207 "parser.y" /* yacc.c:1646  */
     {
         (yyval._value).valueType = INTEGER_TYPE; 
         (yyval._value).value_int = atoi((yyvsp[0].id).c_str());
@@ -1693,7 +1693,7 @@ yyreduce:
     break;
 
   case 51:
-#line 210 "parser.y" /* yacc.c:1646  */
+#line 212 "parser.y" /* yacc.c:1646  */
     {
         (yyval._value).valueType = FLOAT_TYPE; 
         (yyval._value).value_float = (float)(atof((yyvsp[0].id).c_str()));
@@ -1702,7 +1702,7 @@ yyreduce:
     break;
 
   case 52:
-#line 214 "parser.y" /* yacc.c:1646  */
+#line 216 "parser.y" /* yacc.c:1646  */
     {
         (yyval._value).valueType = STRING_TYPE; 
         (yyval._value).value_string = (yyvsp[0].id);
@@ -1711,13 +1711,13 @@ yyreduce:
     break;
 
   case 53:
-#line 218 "parser.y" /* yacc.c:1646  */
+#line 220 "parser.y" /* yacc.c:1646  */
     {(yyval._value).value_null = true;}
 #line 1717 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 54:
-#line 222 "parser.y" /* yacc.c:1646  */
+#line 224 "parser.y" /* yacc.c:1646  */
     {
         (yyval._whereClause).col = (yyvsp[-2]._col);
         (yyval._whereClause).op = (yyvsp[-1]._op);
@@ -1727,7 +1727,7 @@ yyreduce:
     break;
 
   case 55:
-#line 227 "parser.y" /* yacc.c:1646  */
+#line 229 "parser.y" /* yacc.c:1646  */
     {
         (yyval._whereClause).col = (yyvsp[-2]._col);
         (yyval._whereClause).op = EQ_OP;
@@ -1738,7 +1738,7 @@ yyreduce:
     break;
 
   case 56:
-#line 233 "parser.y" /* yacc.c:1646  */
+#line 235 "parser.y" /* yacc.c:1646  */
     {
         (yyval._whereClause).col = (yyvsp[-3]._col);
         (yyval._whereClause).op = NE_OP;
@@ -1749,7 +1749,7 @@ yyreduce:
     break;
 
   case 57:
-#line 242 "parser.y" /* yacc.c:1646  */
+#line 244 "parser.y" /* yacc.c:1646  */
     {
         (yyval.whereClauseList).push_back((yyvsp[0]._whereClause));
       }
@@ -1757,7 +1757,7 @@ yyreduce:
     break;
 
   case 58:
-#line 245 "parser.y" /* yacc.c:1646  */
+#line 247 "parser.y" /* yacc.c:1646  */
     {
       (yyval.whereClauseList).push_back((yyvsp[0]._whereClause));
     }
@@ -1765,7 +1765,7 @@ yyreduce:
     break;
 
   case 59:
-#line 251 "parser.y" /* yacc.c:1646  */
+#line 253 "parser.y" /* yacc.c:1646  */
     {
         (yyval._col).colName = (yyvsp[0].id);
         (yyval._col).hasTableName = false;
@@ -1774,7 +1774,7 @@ yyreduce:
     break;
 
   case 60:
-#line 255 "parser.y" /* yacc.c:1646  */
+#line 257 "parser.y" /* yacc.c:1646  */
     {
         (yyval._col).tableName = (yyvsp[-2].id);
         (yyval._col).colName = (yyvsp[0].id);
@@ -1784,7 +1784,7 @@ yyreduce:
     break;
 
   case 61:
-#line 263 "parser.y" /* yacc.c:1646  */
+#line 265 "parser.y" /* yacc.c:1646  */
     {
 		  (yyval.colList).push_back((yyvsp[0]._col));
     }
@@ -1792,7 +1792,7 @@ yyreduce:
     break;
 
   case 62:
-#line 266 "parser.y" /* yacc.c:1646  */
+#line 268 "parser.y" /* yacc.c:1646  */
     {
       (yyval.colList).push_back((yyvsp[0]._col));
   }
@@ -1800,87 +1800,109 @@ yyreduce:
     break;
 
   case 63:
-#line 271 "parser.y" /* yacc.c:1646  */
+#line 273 "parser.y" /* yacc.c:1646  */
     {(yyval._op) = EQ_OP;}
 #line 1806 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 64:
-#line 271 "parser.y" /* yacc.c:1646  */
+#line 273 "parser.y" /* yacc.c:1646  */
     {(yyval._op) = NE_OP;}
 #line 1812 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 65:
-#line 271 "parser.y" /* yacc.c:1646  */
+#line 273 "parser.y" /* yacc.c:1646  */
     {(yyval._op) = LE_OP;}
 #line 1818 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 66:
-#line 271 "parser.y" /* yacc.c:1646  */
+#line 273 "parser.y" /* yacc.c:1646  */
     {(yyval._op) = GE_OP;}
 #line 1824 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 67:
-#line 271 "parser.y" /* yacc.c:1646  */
+#line 273 "parser.y" /* yacc.c:1646  */
     {(yyval._op) = LT_OP;}
 #line 1830 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 68:
-#line 271 "parser.y" /* yacc.c:1646  */
+#line 273 "parser.y" /* yacc.c:1646  */
     {(yyval._op) = GT_OP;}
 #line 1836 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 69:
-#line 274 "parser.y" /* yacc.c:1646  */
+#line 276 "parser.y" /* yacc.c:1646  */
     {(yyval._expr).isValue = true; (yyval._expr).value = (yyvsp[0]._value);}
 #line 1842 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 70:
-#line 275 "parser.y" /* yacc.c:1646  */
+#line 277 "parser.y" /* yacc.c:1646  */
     {(yyval._expr).isValue = false; (yyval._expr).col = (yyvsp[0]._col);}
 #line 1848 "parser.tab.c" /* yacc.c:1646  */
     break;
 
+  case 71:
+#line 281 "parser.y" /* yacc.c:1646  */
+    {
+        SetClauseInfo temp;
+        temp.colName = (yyvsp[-2].id);
+        temp.value = (yyvsp[0]._value);
+        (yyval.setClauseList).push_back(temp);
+      }
+#line 1859 "parser.tab.c" /* yacc.c:1646  */
+    break;
+
+  case 72:
+#line 287 "parser.y" /* yacc.c:1646  */
+    {
+        SetClauseInfo temp;
+        temp.colName = (yyvsp[-2].id);
+        temp.value = (yyvsp[0]._value);
+        (yyval.setClauseList).push_back(temp);
+    }
+#line 1870 "parser.tab.c" /* yacc.c:1646  */
+    break;
+
   case 73:
-#line 284 "parser.y" /* yacc.c:1646  */
+#line 296 "parser.y" /* yacc.c:1646  */
     {(yyval.selector).isSelectAll = true;}
-#line 1854 "parser.tab.c" /* yacc.c:1646  */
+#line 1876 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 74:
-#line 285 "parser.y" /* yacc.c:1646  */
+#line 297 "parser.y" /* yacc.c:1646  */
     {(yyval.selector).isSelectAll = false; (yyval.selector).colList = (yyvsp[0].colList);}
-#line 1860 "parser.tab.c" /* yacc.c:1646  */
+#line 1882 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 75:
-#line 291 "parser.y" /* yacc.c:1646  */
+#line 303 "parser.y" /* yacc.c:1646  */
     {
 		  TableInfo temp;
 		  temp.tableName = (yyvsp[0].id);
 		  (yyval.tableList).push_back(temp);
 	  }
-#line 1870 "parser.tab.c" /* yacc.c:1646  */
+#line 1892 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 76:
-#line 296 "parser.y" /* yacc.c:1646  */
+#line 308 "parser.y" /* yacc.c:1646  */
     {
 		  TableInfo temp;
 		  temp.tableName = (yyvsp[0].id);
 		  (yyval.tableList).push_back(temp);
 	}
-#line 1880 "parser.tab.c" /* yacc.c:1646  */
+#line 1902 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 77:
-#line 304 "parser.y" /* yacc.c:1646  */
+#line 316 "parser.y" /* yacc.c:1646  */
     {
 		  ColInfo temp;
 		  temp.colName = (yyvsp[0].id);
@@ -1888,11 +1910,11 @@ yyreduce:
 		  (yyval.colList).push_back(temp);
 		  // printf("push back %s\n", $1.c_str());
 		}
-#line 1892 "parser.tab.c" /* yacc.c:1646  */
+#line 1914 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 78:
-#line 311 "parser.y" /* yacc.c:1646  */
+#line 323 "parser.y" /* yacc.c:1646  */
     {
 		ColInfo temp;
 		temp.colName = (yyvsp[0].id);
@@ -1900,47 +1922,47 @@ yyreduce:
 		(yyval.colList).push_back(temp);
 		// printf("push back %s\n", $3.c_str());
 	}
-#line 1904 "parser.tab.c" /* yacc.c:1646  */
+#line 1926 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 79:
-#line 320 "parser.y" /* yacc.c:1646  */
+#line 332 "parser.y" /* yacc.c:1646  */
     {(yyval.id) = (yyvsp[0].id);}
-#line 1910 "parser.tab.c" /* yacc.c:1646  */
+#line 1932 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 80:
-#line 322 "parser.y" /* yacc.c:1646  */
+#line 334 "parser.y" /* yacc.c:1646  */
     { (yyval.id) = (yyvsp[0].id);}
-#line 1916 "parser.tab.c" /* yacc.c:1646  */
+#line 1938 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 81:
-#line 324 "parser.y" /* yacc.c:1646  */
+#line 336 "parser.y" /* yacc.c:1646  */
     { (yyval.id) = (yyvsp[0].id);}
-#line 1922 "parser.tab.c" /* yacc.c:1646  */
+#line 1944 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 82:
-#line 326 "parser.y" /* yacc.c:1646  */
+#line 338 "parser.y" /* yacc.c:1646  */
     { (yyval.id) = (yyvsp[0].id);}
-#line 1928 "parser.tab.c" /* yacc.c:1646  */
+#line 1950 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 83:
-#line 328 "parser.y" /* yacc.c:1646  */
+#line 340 "parser.y" /* yacc.c:1646  */
     { (yyval.id) = (yyvsp[0].id);}
-#line 1934 "parser.tab.c" /* yacc.c:1646  */
+#line 1956 "parser.tab.c" /* yacc.c:1646  */
     break;
 
   case 84:
-#line 330 "parser.y" /* yacc.c:1646  */
+#line 342 "parser.y" /* yacc.c:1646  */
     { (yyval.id) = (yyvsp[0].id); }
-#line 1940 "parser.tab.c" /* yacc.c:1646  */
+#line 1962 "parser.tab.c" /* yacc.c:1646  */
     break;
 
 
-#line 1944 "parser.tab.c" /* yacc.c:1646  */
+#line 1966 "parser.tab.c" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -2168,7 +2190,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 333 "parser.y" /* yacc.c:1906  */
+#line 345 "parser.y" /* yacc.c:1906  */
 
 
 void yyerror(const char *s)

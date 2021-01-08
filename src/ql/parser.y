@@ -36,6 +36,8 @@
 %type <_field> field
 %type <_whereClause> whereClause
 %type <whereClauseList> whereClauseList
+// %type <_setClause> setClause
+%type <setClauseList> setClause
 %type <_expr> expr
 %type <_value> value
 %type <valueList> valueList
@@ -87,7 +89,7 @@ tbStmt:
         qm->deleteFromTable($3, $5);
     }
     | UPDATE tbName SET setClause WHERE whereClauseList {
-        qm->updateTable();
+        qm->updateTable($2, $4, $6);
     }
     | SELECT selector FROM tableList WHERE whereClauseList 
       {
@@ -276,8 +278,18 @@ expr:
     ;
 
 setClause: 
-      colName EQ value
-    | setClause ',' colName EQ value
+      colName EQ value {
+        SetClauseInfo temp;
+        temp.colName = $1;
+        temp.value = $3;
+        $$.push_back(temp);
+      }
+    | setClause ',' colName EQ value {
+        SetClauseInfo temp;
+        temp.colName = $3;
+        temp.value = $5;
+        $$.push_back(temp);
+    }
     ;
 
 selector: 

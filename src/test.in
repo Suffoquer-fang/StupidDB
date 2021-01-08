@@ -10,6 +10,7 @@ insert into testTable values (5555, '56789', 5555);
 insert into testTable values (6666, NULL, 6667);
 insert into testTable values (6666, NULL, 6665);
 select * from testTable where b is not NULL;
-delete from testTable where a is NULL;
+update testTable set a = NULL where a is not NULL;
 select * from testTable where b is not NULL;
+
 drop table testTable;

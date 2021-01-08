@@ -49,7 +49,7 @@ class QL_QueryManager {
         sm->dropTable(tableName);
     }
     void descTable() {}
-    void insertIntoTable(string tableName, vector<vector<ValueInfo>> valueLists) {
+    void insertIntoTable(string tableName, vector<vector<ValueInfo> > valueLists) {
         cout << "insert into " << tableName  << endl;
 
         for(int i = 0; i < valueLists.size(); ++i) {
@@ -80,14 +80,54 @@ class QL_QueryManager {
 
         sm->deleteFromTable(tableName, conds);
     }
-    void updateTable() {}
+    
+    void updateTable(string tableName, vector<SetClauseInfo> setClauseList, vector<WhereClauseInfo> whereClauseList) {
+        vector<RID> rids;
+
+        Conditions conds;
+
+        for(int i = 0; i < whereClauseList.size(); ++i) {
+            whereClauseList[i].col.tableName = tableName;
+            if(!whereClauseList[i].expr.isValue)
+                whereClauseList[i].expr.col.tableName = tableName;
+        }
+
+        for(int i = 0; i < whereClauseList.size(); ++i) {
+            Condition cond;
+            buildCondition(cond, whereClauseList[i]);
+            conds.addCond(cond);
+        }
+
+
+        vector<Condition> sets;
+        for(int i = 0; i < setClauseList.size(); ++i) {
+            Condition cond;
+
+            buildSetClause(tableName, cond, setClauseList[i]);
+            sets.push_back(cond);
+        }
+
+        sm->updateTable(tableName, sets, conds);
+
+
+    }
+
+
     void selectFromTables(SelectorInfo selector, vector<TableInfo> tableList, vector<WhereClauseInfo> whereClauseList) {
         cout << "Select Stmt";
         selector.debug();
         
         // assert(tableList.size() == 1);
-
+        if(tableList.size() > 1) {
+            cout << "not support" << endl;
+            return;
+        }
         string tableName = tableList[0].tableName;
+
+        if(!selector.isSelectAll) {
+            for(int i = 0; i < selector.colList.size(); ++i)
+                modifyCol(selector.colList[i], tableList);
+        }
 
         for(int i = 0; i < whereClauseList.size(); ++i) {
             modifyCol(whereClauseList[i].col, tableList);
@@ -107,9 +147,17 @@ class QL_QueryManager {
             buildCondition(cond, whereClauseList[i]);
             conds.addCond(cond);
         }
-        sm->selectFromTable(tableName, conds);
 
 
+
+
+
+
+        sm->selectFromTableAndPrint(tableName, conds);
+
+
+
+        for(int i = 0; )
     }
 
     void createIndex() {}
@@ -184,6 +232,11 @@ class QL_QueryManager {
         return false;
     }
 
+    bool isInnerWhere(WhereClauseInfo& where) {
+        if(where.expr.isValue) return true;
+        return where.col.tableName == where.expr.col.tableName;
+    }
+
     bool buildCondition(Condition &cond, WhereClauseInfo& where) {
         
         int tableID = sm->findTable(where.col.tableName);
@@ -194,7 +247,9 @@ class QL_QueryManager {
         int off = attr.offset;
         AttrType type = attr.attrType;
         int rhsOff = -1;
-        char ret[attr.attrLen] = {0};
+        char *ret = new char [attr.attrLen];
+        memset(ret, 0, attr.attrLen);
+
         if(where.expr.isValue) {
             
             if(where.expr.value.value_null) {
@@ -223,9 +278,49 @@ class QL_QueryManager {
             // cout << rhsOff << endl;
             cond.set(off, type, attr.attrLen, where.op, nullptr, false, rhsOff);
         }
+        delete [] ret;
         return true;
 
         
+
+    }
+
+    bool buildSetClause(string tableName, Condition &cond, SetClauseInfo &setClause) {
+        int tableID = sm->findTable(tableName);
+        Table &temp = sm->dbConfig.tableVec[tableID];
+        int attrID = temp.findAttr(setClause.colName);
+        AttrInfo &attr = temp.attrVec[attrID];
+
+        int off = attr.offset;
+        AttrType type = attr.attrType;
+        int rhsOff = -1;
+
+        char *ret = new char [attr.attrLen];
+        memset(ret, 0, attr.attrLen);
+
+        if(setClause.value.value_null) {
+            ret[0] = 1;
+        }
+        else if(setClause.value.valueType == STRING_TYPE) {
+            if(setClause.value.value_string.length() > attr.attrLen - 1) {
+                cout << "condition string too long" << endl;
+                return false;
+            }
+            else {
+                memcpy(ret + 1, setClause.value.value_string.c_str(), setClause.value.value_string.length());
+            }
+        }
+        else if(setClause.value.valueType == INTEGER_TYPE) {
+            memcpy(ret + 1, &(setClause.value.value_int), 4);
+        }
+        else if(setClause.value.valueType == FLOAT_TYPE) {
+            memcpy(ret + 1, &(setClause.value.value_float), 4);
+        
+        }
+        cond.set(off, type, attr.attrLen, EQ_OP, ret, true);
+
+        delete [] ret;
+        return true;
 
     }
 
