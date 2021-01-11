@@ -87,7 +87,9 @@ inline void debugCompareOP(CompareOP op) {
 
 
 enum RC {
-    
+    ERROR_DB_NOT_EXIST,
+    ERROR_TABLE_NOT_EXIST,
+    ERROR_COLUMN_NOT_EXIST,
 };
 
 

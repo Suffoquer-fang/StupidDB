@@ -31,10 +31,9 @@ class SM_SystemManager {
         ~SM_SystemManager() {}
 
         bool openDB(const char *dbName) {
-            const char *rootDir = "/home/suffoquer/Workspace/2020Autumn/database/StupidDB/src/data";
-            chdir(rootDir);
+            cout << "www read" << endl;
             chdir(dbName);
-            // cout << "read " << dbName << " ";
+            cout << "read " << dbName << endl;
             dbConfig.dbName = string(dbName);
             bool ret = readDBConfigFromMeta();
             if(!ret) return false;
@@ -262,13 +261,15 @@ class SM_SystemManager {
     
 
         bool readDBConfigFromMeta() {
-            // cout << "read ";
+            cout << "start read meta" << endl;
             ifstream ism;
             
-            ism.open("meta.db");
+            ism.open("./meta.db");
+            cout << "open meta" << endl;
+
             // ism >> dbConfig.dbName;
             ism >> dbConfig.tableNum;
-
+            
             for(int i = 0; i < dbConfig.tableNum; ++i) {
                 Table table;
                 ism >> table;
@@ -277,7 +278,7 @@ class SM_SystemManager {
 
             ism.close();
 
-            // cout << "read ";
+            cout << "read meta" << endl;
             // cout << dbConfig.dbName << endl;
             return true;
         }

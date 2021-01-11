@@ -8,6 +8,7 @@
 
 #include <dirent.h>
 #include <iomanip> 
+#include "../utils/formatPrinter.h"
 
 // extern class SM_SystemManager;
 
@@ -17,17 +18,24 @@ class QL_QueryManager {
    public:
    SM_SystemManager* sm;
    bool isInDB = false;
+   string curDB;
 	QL_QueryManager() {
         // sm = new SM_SystemManager();
+        system("mkdir data");
+        chdir("data");
+
+        FormatPrinter::instance().printWelcome();
     }
 	~QL_QueryManager() {}
 
     void showDatabases() {
-        const char *rootDir = "/home/suffoquer/Workspace/2020Autumn/database/StupidDB/src/data/";
-        // chdir(rootDir);
-        cout << setw(10) <<"------------" << endl;
-        cout <<  "|" << setiosflags(ios::left)<<setw(10) << "DATABASES" << "|" << endl;
-        cout << setw(10) <<"+----------+" << endl;
+        const char *rootDir = "./";
+
+
+        FormatPrinter::instance().setLineWidth(10);
+        FormatPrinter::instance().printHeaderLine();
+        FormatPrinter::instance().printString("DATABASES", -1, 1, 1, 1, 1);
+        FormatPrinter::instance().printMidLine();
         DIR *dir;
         struct dirent *ptr;
         dir=opendir(rootDir);
@@ -37,35 +45,50 @@ class QL_QueryManager {
                 continue;
              else if(ptr->d_type == 4)    ///dir
              {
-                cout <<  "|" << setiosflags(ios::left)<<setw(10) << ptr->d_name << "|" << endl;
+                FormatPrinter::instance().printString(ptr->d_name, -1, 1, 1, 1, 1);
              }
          }
         closedir(dir);
-
-        cout << setw(8) <<"------------" << endl;
+        FormatPrinter::instance().printHeaderLine();
     }
     void createDatabase(string dbName) {
-        const char *rootDir = "/home/suffoquer/Workspace/2020Autumn/database/StupidDB/src/data";
-        chdir(rootDir);
+        if(isInDB)
+            chdir("..");
         char command[100] = "mkdir ";
         system(strcat(command, dbName.c_str()));
         chdir(dbName.c_str());
         ofstream outfile("meta.db");
         outfile << 0;
         outfile.close();
-        chdir(rootDir);
+        chdir("..");
+
+        cout << "Create Database ";
+        FormatPrinter::quoteString(dbName);
+        cout << endl;
     }
     void dropDatabase(string dbName) {
-        const char *rootDir = "/home/suffoquer/Workspace/2020Autumn/database/StupidDB/src/data";
-        chdir(rootDir);
+        if(isInDB)
+            chdir("..");
         
         char command[100] = "rm -r ";
 	    system(strcat(command, dbName.c_str()));
         isInDB = false;
+        curDB = "";
+        cout << "Drop Database ";
+        FormatPrinter::quoteString(dbName);
+        cout << endl;
     }
     void useDatabase(string dbName) {
+        if(isInDB) {
+            cout << "before" << endl;
+            chdir("..");
+        }
         isInDB = true;
+        curDB = dbName;
         sm->openDB(dbName.c_str());
+        cout << "Use Database ";
+        FormatPrinter::quoteString(dbName);
+        cout << endl;
     }
     void showTables() {
         sm->showTables();
@@ -116,51 +139,38 @@ class QL_QueryManager {
 
     }
     void dropTable(string tableName) {
+        
         sm->dropTable(tableName);
     }
     void descTable(string tableName) {
         int tableID = sm->findTable(tableName);
         if(tableID == -1) {
-            cout << "ERROR: Table Not Exists" << endl;
+            FormatPrinter::printError(RC::ERROR_TABLE_NOT_EXIST, vector<string>(1, tableName));
             return;
         }
         Table &temp = sm->dbConfig.tableVec[tableID];
-        int lineSize = 52;
-        for(int i = 0; i < lineSize; ++i)
-            cout << "-";
-        cout << endl;
+        FormatPrinter::instance().setLineWidth(50);
+        FormatPrinter::instance().printHeaderLine();
+        FormatPrinter::instance().printString(tableName, -1, 1, 1, 1, 1);
         
-        cout <<  "|" << setiosflags(ios::left)<<setw(50) << tableName << "|" << endl;
-        
-        cout <<"+";
-        for(int i = 0; i < lineSize-2; ++i)
-            cout << "-";
-        cout <<"+"<< endl;
+        FormatPrinter::instance().printMidLine();
+
         for (auto& attr: temp.attrVec) {
-
-            // cout <<  "|" << setiosflags(ios::left) << setw(10) << attr.attrName;
-            printf("|%-40s", attr.attrName.c_str());
-            // cout << setiosflags(ios::right) << setw(10) << AttrType2Str(attr.attrType) << "|" << endl;
-            printf("%10s|\n", AttrType2Str(attr.attrType).c_str());
-            
+            FormatPrinter::instance().printString(attr.attrName, 40, 1, 1, 0, 0);
+            FormatPrinter::instance().printString(AttrType2Str(attr.attrType), 10, 0, 0, 1, 1); 
         }
-        cout <<"+";
-        for(int i = 0; i < lineSize-2; ++i)
-            cout << "-";
-        cout <<"+"<< endl;
+        FormatPrinter::instance().printMidLine();
 
+        string tmp = "Primary Key: ";
         if(temp.primaryKey.idVec.size() > 0) {
-            string tmp = "Primary Key: ";
             tmp += temp.stringfy(temp.primaryKey);
-            cout <<  "|" << setiosflags(ios::left)<<setw(50) << tmp << "|" << endl;
         } else {
-            cout <<  "|" << setiosflags(ios::left)<<setw(50) << "Primary Key: NULL" << "|" << endl;
+            tmp += "NULL";
         }
+
+        FormatPrinter::instance().printString(tmp, -1, 1, 1, 1, 1);
         
-        cout <<"+";
-        for(int i = 0; i < lineSize-2; ++i)
-            cout << "-";
-        cout <<"+"<< endl;
+        FormatPrinter::instance().printMidLine();
         
         if(temp.foreignKeyVec.size() == 0) {
             cout <<  "|" << setiosflags(ios::left)<<setw(50) << "Foreign Key: NULL" << "|" << endl;
@@ -178,15 +188,14 @@ class QL_QueryManager {
                 cout <<  "|" << setiosflags(ios::left)<<setw(50) << tmp << "|" << endl;
             }
         }   
-        for(int i = 0; i < lineSize; ++i)
-            cout << "-";
-        cout << endl;
+        FormatPrinter::instance().printHeaderLine();
 
     }
     void insertIntoTable(string tableName, vector<vector<ValueInfo> > valueLists) {
         int tableID = sm->findTable(tableName);
         if(tableID == -1) {
-            cout << "ERROR: Table Not Exists" << endl;
+            FormatPrinter::instance().printError(RC::ERROR_TABLE_NOT_EXIST, 
+                                vector<string>(1, tableName));
             return;
         }
         for(int i = 0; i < valueLists.size(); ++i) {

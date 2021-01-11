@@ -18,11 +18,9 @@ int main(void)
     IX_IndexManager *ix = new IX_IndexManager(fm, bpm);
 
     qm->sm = new SM_SystemManager(rm, ix);
-
-    // qm->sm->openDB("myDB");
-
     
-    yyparse(); 
+    while(1)
+        yyparse(); 
 
     cout << "exit" << endl;
     qm->sm->closeDB();

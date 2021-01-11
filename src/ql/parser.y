@@ -371,5 +371,5 @@ idxName: IDENTIFIER { $$ = $1; };
 
 void yyerror(const char *s)
 {
-    printf("yy err\n");
+    printf("SYNTAX ERROR\n");
 }
