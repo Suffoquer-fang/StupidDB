@@ -11,6 +11,8 @@
         "string": "cpp",
         "unordered_map": "cpp",
         "vector": "cpp",
-        "bitset": "cpp"
+        "bitset": "cpp",
+        "iosfwd": "cpp",
+        "iomanip": "cpp"
     }
 }

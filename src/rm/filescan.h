@@ -54,7 +54,7 @@ class RM_FileScan {
 
 	bool next(unsigned int* ret, RID &rid) {
 		bool r = next(ret);
-		if(!r) cout << "fuck" << endl;
+		// if(!r) cout << "fuck" << endl;
 		if(ret)
 			rid.set(curRID.pageID, curRID.slotID);
 		else 

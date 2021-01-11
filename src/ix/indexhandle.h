@@ -66,7 +66,7 @@ class IX_IndexHandle {
 		// if (!ret) return false;
 		IX_BPlusTreeNode *node = new IX_BPlusTreeNode();
 		convertPageToNode(retID, node);
-
+		// node->debug();
 		if (index < node->curNum - 1) {
 			index += 1;
 			return true;

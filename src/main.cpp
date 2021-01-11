@@ -24,6 +24,7 @@ int main(void)
     
     yyparse(); 
 
+    cout << "exit" << endl;
     qm->sm->closeDB();
     
     return 0; 

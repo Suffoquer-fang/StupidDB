@@ -53,7 +53,7 @@ class RM_RecordManager {
         }
 
         RM_FileHandle* getFileHandle(int fileID) {
-            this->fh = new RM_FileHandle(fm, bpm, fileID);
+            RM_FileHandle* fh = new RM_FileHandle(fm, bpm, fileID);
             return fh;
         }
 };

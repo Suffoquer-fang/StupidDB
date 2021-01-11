@@ -65,7 +65,7 @@ inline string Attr2Str(void* pData, AttrType type, int len) {
         return to_string(*((int*)pData));
     }
     if(type == FLOAT_TYPE) {
-        return "undone";
+        return to_string(*((float*)pData));
     }
     if(type == STRING_TYPE) {
         return string((char*)pData, len - 1);

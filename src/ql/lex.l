@@ -65,6 +65,7 @@ FOREIGN { return FOREIGN; }
 REFERENCES {return REFERENCES; }
 ON { return ON; }
 TO { return TO; }
+EXIT {return EXIT;}
 
 
 

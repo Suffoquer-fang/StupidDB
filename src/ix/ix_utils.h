@@ -42,7 +42,7 @@ struct IX_BPlusTreeNode {
         printf("nodeID: %d, parent: %d, prev %d, next %d\n", selfID, parentNode, prevNode, nextNode);
         printf("childNum: %d\n", curNum);
         for(int i = 0; i < min(curNum, 10); ++i)
-            printf("%d: %d - %d   ", i, *(getIthKeyPointer(i, 4)), getIthPage(i));
+            printf("%d: %d - %d   ", i, *(getIthKeyPointer(i, 5) + 1), getIthPage(i));
         printf("\n\n");
 
 

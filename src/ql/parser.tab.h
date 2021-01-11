@@ -84,16 +84,17 @@ extern int yydebug;
     REFERENCES = 294,
     ON = 295,
     TO = 296,
-    EQ = 297,
-    NE = 298,
-    LT = 299,
-    GT = 300,
-    LE = 301,
-    GE = 302,
-    IDENTIFIER = 303,
-    VALUE_INT = 304,
-    VALUE_FLOAT = 305,
-    VALUE_STRING = 306
+    EXIT = 297,
+    EQ = 298,
+    NE = 299,
+    LT = 300,
+    GT = 301,
+    LE = 302,
+    GE = 303,
+    IDENTIFIER = 304,
+    VALUE_INT = 305,
+    VALUE_FLOAT = 306,
+    VALUE_STRING = 307
   };
 #endif
 

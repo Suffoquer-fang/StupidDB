@@ -1,16 +1,16 @@
 use myDB;
-create table testTable (a INT(4), b VARCHAR(10), c INT(4));
-show tables;
+INSERT INTO nation VALUES (0,'America',0, 'nothing left');
+INSERT INTO nation VALUES ('id86','America',0, 'nothing left');
+INSERT INTO orders VALUES (127664,315000,'F',6.5,'2018/2/29',0,'Clerk101',1,'nice service');
+DELETE FROM customer WHERE C_CUSTKEY=5;
+UPDATE partsupp SET PS_AVAILQTY = 8774 WHERE PS_PARTKEY=12;
+SELECT * FROM customer WHERE C_NATIONKEY < 10;
+SELECT O_ORDERDATE,O_TOTALPRICE FROM orders WHERE O_ORDERDATE='1996-01-02';
+SELECT C_PHONE,O_ORDERSTATUS FROM customer,orders where C_CUSTKEY=O_CUSTKEY AND C_NAME='Customer#000000001';
 
 
-insert into testTable values (NULL, '6634588', NULL);
-insert into testTable values (1234, '1234', 6666);
-insert into testTable values (NULL, '56789', NULL);
-insert into testTable values (5555, '56789', 5555);
-insert into testTable values (6666, NULL, 6667);
-insert into testTable values (6666, NULL, 6665);
-select * from testTable where b is not NULL;
-update testTable set a = NULL where a is not NULL;
-select * from testTable where b is not NULL;
+UPDATE nation SET N_REGIONKEY = 316001 WHERE N_NATIONKEY = 15;
+ALTER TABLE customer ADD INDEX IDX(C_ACCTBAL);
 
-drop table testTable;
+SELECT C_NAME, O_ORDERSTATUS, N_NATIONKEY FROM customer,orders,nation  WHERE C_CUSTKEY=O_CUSTKEY AND C_NATIONKEY=N_NATIONKEY and N_NAME='CHINA                    ';
+SELECT C_NAME, O_ORDERSTATUS, N_NATIONKEY FROM customer,orders,nation,region WHERE C_CUSTKEY=O_CUSTKEY AND C_NATIONKEY=N_NATIONKEY AND N_REGIONKEY=R_REGIONKEY AND N_NAME='CHINA                    ';

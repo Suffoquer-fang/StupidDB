@@ -20,7 +20,7 @@
         UPDATE SET SELECT IS TOKEN_INT VARCHAR
         DEFAULT CONSTRAINT CHANGE ALTER ADD RENAME
         DESC INDEX AND DATE FLOAT FOREIGN
-        REFERENCES ON TO	
+        REFERENCES ON TO	EXIT
 %token EQ NE LT GT LE GE	
 %token IDENTIFIER
 %token VALUE_INT
@@ -60,14 +60,25 @@ stmt:
     | 
     idxStmt ';'
     | 
-    alterStmt';';
+    alterStmt';'
+    |
+    EXIT ';' {
+      cout << "exit db" << endl;
+      qm->sm->closeDB();
+      exit(0);
+    }
+    ;
 
 sysStmt: 
-    SHOW DATABASES;
+    SHOW DATABASES {qm->showDatabases();};
 
 dbStmt:   
-      CREATE DATABASE dbName {printf("Create\n");}
-    | DROP DATABASE dbName
+      CREATE DATABASE dbName {
+        qm->createDatabase($3);
+      }
+    | DROP DATABASE dbName {
+      qm->dropDatabase($3);
+    }
     | USE dbName {
       qm->useDatabase($2);
     }
@@ -81,7 +92,9 @@ tbStmt:
     | DROP TABLE tbName {
         qm->dropTable($3);
     }
-    | DESC tbName
+    | DESC tbName {
+        qm->descTable($2);
+    }
     | INSERT INTO tbName VALUES valueLists {
         qm->insertIntoTable($3, $5);
     }
@@ -95,48 +108,57 @@ tbStmt:
       {
         qm->selectFromTables($2, $4, $6);
       }
+    | SELECT selector FROM tableList 
+      {
+        qm->selectFromTables($2, $4);
+      }
 	  ;
 
 idxStmt:
-      CREATE INDEX idxName ON tbName '(' columnList ')' {printf("create index\n"); for(int i = 0; i < $7.size(); ++i) $7[i].debug();}
+      CREATE INDEX idxName ON tbName '(' columnList ')' {
+        qm->createIndex($5, $3, $7);
+      }
     | DROP INDEX idxName {
-      qm->dropIndex();
+        qm->dropIndex($3);
     }
     | ALTER TABLE tbName ADD INDEX idxName '(' columnList ')' {
-      qm->alterAddIndex();
+      qm->alterAddIndex($3, $6, $8);
     }
     | ALTER TABLE tbName DROP INDEX idxName {
-      qm->alterDropIndex();
+      qm->alterDropIndex($3, $6);
     }
     ;
 
 alterStmt: 
       ALTER TABLE tbName ADD field {
         qm->alterAddfield();
+        cout << "Not Supported" << endl;
       }
     | ALTER TABLE tbName DROP colName {
-      qm->alterAddCol();
+      qm->alterDropCol();
+      cout << "Not Supported" << endl;
     }
     | ALTER TABLE tbName CHANGE colName field {
       qm->alterChange();
+      cout << "Not Supported" << endl;
     }
     | ALTER TABLE tbName RENAME TO tbName {
-      qm->alterRename();
+      qm->alterRename($3, $6);
     }
     | ALTER TABLE tbName DROP PRIMARY KEY {
-      qm->alterDropPrimaryKey();
+      qm->alterDropPrimaryKey($3, "", false);
     }
     | ALTER TABLE tbName ADD CONSTRAINT pkName PRIMARY KEY '(' columnList ')' {
-      qm->alterAddPrimaryKey();
+      qm->alterAddPrimaryKey($3, $6, $10);
     }
     | ALTER TABLE tbName DROP PRIMARY KEY pkName {
-      qm->alterDropPrimaryKey();
+      qm->alterDropPrimaryKey($3, $7, true);
     }
     | ALTER TABLE tbName ADD CONSTRAINT fkName FOREIGN KEY '(' columnList ')' REFERENCES tbName '(' columnList ')' {
-      qm->alterAddForeignKey();
+      qm->alterAddForeignKey($3, $6, $10, $13, $15);
     }
     | ALTER TABLE tbName DROP FOREIGN KEY fkName {
-      qm->alterDropForeignKey();
+      qm->alterDropForeignKey($3, $7);
     }
     ;
 
@@ -153,6 +175,7 @@ field:
     | colName type NOT SQLNULL {
         $$.colName = $1;
         $$.type = $2;
+        $$.is_not_null = true;
     }
     | colName type DEFAULT value {
         $$.colName = $1;
@@ -161,9 +184,11 @@ field:
     | colName type NOT SQLNULL DEFAULT value {
         $$.colName = $1;
         $$.type = $2;
+        $$.is_not_null = true;
     }
     | PRIMARY KEY '(' columnList ')' {
         $$.isPrimaryKey = true;
+        $$.is_not_null = true;
         $$.colList = $4;
     }
     | FOREIGN KEY '(' colName ')' REFERENCES tbName '(' colName ')' {
@@ -181,7 +206,7 @@ type:
       }
     | VARCHAR '(' VALUE_INT ')' {
         $$.type = STRING_TYPE;
-        $$.attrLen = 10;
+        $$.attrLen = atoi($3.c_str());
     }
     | DATE {
         $$.type = STRING_TYPE;
@@ -346,5 +371,5 @@ idxName: IDENTIFIER { $$ = $1; };
 
 void yyerror(const char *s)
 {
-    printf("err\n");
+    printf("yy err\n");
 }

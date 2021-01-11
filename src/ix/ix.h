@@ -23,14 +23,17 @@ class IX_IndexManager {
         }
         
         bool createIndex(const char* name, int indexNo, AttrType attrType, int attrLen) {
-            
+            // puts("init\n");
+            // cout << indexNo << endl;
             const char* realName = getFileName(name, indexNo).c_str();
+            // puts("init\n");
+            // cout << fm << endl;
             bool ret = fm->createFile(realName);
             if(!ret) return false;
-
+            // puts("init\n");
+            
             IX_FileConfig fileConfig;
             fileConfig.init(attrType, attrLen);
-            // puts("init\n");
             // printf("sss %d\n", fileConfig.treeNodeInfoSize);
             int fileID, index;
             if(!fm->openFile(realName, fileID)) return false;
@@ -52,7 +55,6 @@ class IX_IndexManager {
 
             delete root;
             
-            // printf("init done\n");
             
             
             fm->closeFile(fileID);

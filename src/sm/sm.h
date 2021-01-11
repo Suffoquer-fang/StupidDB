@@ -9,12 +9,15 @@
 #include <iostream>
 #include <fstream>
 
+#include <iomanip> 
+
 using namespace std;
 
 class SM_SystemManager {
     public:
         DBConfig dbConfig;
         map<string, int> fileIDMap;
+        map<string, int> indexIDMap;
 
         RM_RecordManager *rm;
         IX_IndexManager *ix;
@@ -28,19 +31,30 @@ class SM_SystemManager {
         ~SM_SystemManager() {}
 
         bool openDB(const char *dbName) {
-            cout << "openDB" << endl;
+            const char *rootDir = "/home/suffoquer/Workspace/2020Autumn/database/StupidDB/src/data";
+            chdir(rootDir);
             chdir(dbName);
             // cout << "read " << dbName << " ";
             dbConfig.dbName = string(dbName);
             bool ret = readDBConfigFromMeta();
             if(!ret) return false;
+            // cout << "read done" << endl;
 
             int fileID;
+            int indexID;
             for(int i = 0; i < dbConfig.tableNum; ++i) {
                 if(!rm->openFile(dbConfig.tableVec[i].tableName.c_str(), fileID))
                     return false;
                 fileIDMap[dbConfig.tableVec[i].tableName] = fileID;
+
+              
             }
+
+            for(int i = 0; i < dbConfig.tableNum; ++i) {
+                dbConfig.tableVec[i].ix = ix;
+                dbConfig.tableVec[i].rm = rm;
+            }
+            // cout << "success" << endl;
         }               
         bool closeDB() {
             bool ret = writeDBConfigToMeta();
@@ -50,20 +64,21 @@ class SM_SystemManager {
                     return false;
             }
             fileIDMap.clear();
+            indexIDMap.clear();
             return true;
         }
 
 
 
         bool createTable(Table table) {
-            cout << "create" << endl;
+            // cout << "create" << endl;
 
             table.rm = rm;
             table.ix = ix;
 
             for(int i = 0; i < dbConfig.tableNum; ++i) {
                 if(dbConfig.tableVec[i].tableName == table.tableName) {
-                    cout << "already" << endl;
+                    cout << "ERROR: Table Already Exists" << endl;
                     return false;
                 }
             }
@@ -73,12 +88,12 @@ class SM_SystemManager {
             bool ret = rm->createFile(table.tableName.c_str(), table.recordSize);
             if(!ret) return false;
 
-            for(int i = 0; i < table.attrNum; ++i) {
-                if(table.attrVec[i].hasIndex) {
-                    AttrInfo attrInfo = table.attrVec[i];
-                    ix->createIndex(table.tableName.c_str(), i, attrInfo.attrType, attrInfo.attrLen);
-                }
-            }
+            // for(int i = 0; i < table.attrNum; ++i) {
+            //     if(table.attrVec[i].hasIndex) {
+            //         AttrInfo attrInfo = table.attrVec[i];
+            //         ix->createIndex(table.tableName.c_str(), i, attrInfo.attrType, attrInfo.attrLen);
+            //     }
+            // }
 
             int fileID;
             rm->openFile(table.tableName.c_str(), fileID);
@@ -107,17 +122,30 @@ class SM_SystemManager {
             return true;
         }   
 
-        bool addPrimaryKey(const string tableName, const string attr) {
+        bool addPrimaryKey(const string tableName,  vector<string> attrs) {
             int tableID = findTable(tableName);
             if(tableID == -1) return false;
 
             int fileID = fileIDMap[tableName];
             RM_FileHandle *fh = rm->getFileHandle(fileID);
-            bool ret = dbConfig.tableVec[tableID].addPrimaryKey(attr, fh);
+            // cout << "mmmmm" << endl;
+            bool ret = dbConfig.tableVec[tableID].addPrimaryKey(attrs, fh);
+            // cout << "mmmmm" << endl;
             delete fh;
             return ret;
         }
 
+        bool checkPrimaryKeyNotExist(string tableName, void* pData) {
+            int tableID = findTable(tableName);
+            if(tableID == -1) return false;
+
+            int fileID = fileIDMap[tableName];
+            RM_FileHandle *fh = rm->getFileHandle(fileID);
+
+            bool ret = dbConfig.tableVec[tableID].checkPrimaryKey(pData, fh);
+            delete fh;
+            return ret;
+        }
 
 
         bool checkValidRecord(string tableName, void* pData) {
@@ -140,15 +168,19 @@ class SM_SystemManager {
 
 
 
-        bool selectFromTable(string tableName, Conditions conds, vector<RID> &ret) {
+        bool selectFromTable(string tableName, Conditions& conds, vector<RID> &ret) {
             int tableID = findTable(tableName);
             if(tableID == -1) return false;
-
+            // cout << "wwwwd" << endl;
             int fileID = fileIDMap[tableName];
             RM_FileHandle *fh = rm->getFileHandle(fileID);
+            // cout << "wwwwd2222" << endl;
+            // if(!fh) {
+            //     cout << "nulll" << endl;
+            // }
             dbConfig.tableVec[tableID].selectRIDs(ret, conds, fh);
-
-            delete fh;
+            // cout << "wwwwd2222" << endl;
+            // delete fh;
             return true;
         }
 
@@ -162,11 +194,24 @@ class SM_SystemManager {
             dbConfig.tableVec[tableID].selectRIDs(rids, conds, fh);
 
             for(int i = 0; i < rids.size(); ++i) {
-                cout << dbConfig.tableVec[tableID].stringfy(rids[i], fh) << endl;
+                cout << dbConfig.tableVec[tableID].stringfy(rids[i], fh, vector<int>()) << endl;
             }
             delete fh;
             return true;
         }
+
+        bool getRecordString(string tableName, vector<RID> &rids, vector<int> printOffs, vector<string>& ret) {
+            int tableID = findTable(tableName);
+            if(tableID == -1) return false;
+            int fileID = fileIDMap[tableName];
+            RM_FileHandle *fh = rm->getFileHandle(fileID);
+
+            for(int i = 0; i < rids.size(); ++i) {
+                ret.push_back(dbConfig.tableVec[tableID].stringfy(rids[i], fh, printOffs));
+            }
+            return true;
+        }
+
 
 
         bool deleteFromTable(string tableName, Conditions conds) {
@@ -202,19 +247,22 @@ class SM_SystemManager {
         }
 
         void showTables() {
-            cout << "----------------------------------" << endl;
+            cout << setw(10) <<"------------" << endl;
+            cout <<  "|" << setiosflags(ios::left)<<setw(10) << "TABLES" << "|" << endl;
+            cout << setw(10) <<"+----------+" << endl;
             for(int i = 0; i < dbConfig.tableNum; ++i) {
 
-                cout << dbConfig.tableVec[i].tableName << endl;
+                cout <<  "|" << setiosflags(ios::left)<<setw(10) << dbConfig.tableVec[i].tableName << "|" << endl;
+            
             }
 
-            cout << "----------------------------------" << endl;
+            cout << setw(10) <<"------------" << endl;
         }
 
     
 
         bool readDBConfigFromMeta() {
-            cout << "read ";
+            // cout << "read ";
             ifstream ism;
             
             ism.open("meta.db");
@@ -223,24 +271,15 @@ class SM_SystemManager {
 
             for(int i = 0; i < dbConfig.tableNum; ++i) {
                 Table table;
-                ism >> table.tableName;
-                ism >> table.attrNum;
-                ism >> table.recordSize;
-
-                for(int j = 0; j < table.attrNum; ++j) {
-                    AttrInfo attrInfo;
-                    ism >> attrInfo;
-                    // cout << "read: " << AttrType2Str(attrInfo.attrType) << endl;
-
-                    table.attrVec.push_back(attrInfo);
-                }
+                ism >> table;
                 dbConfig.tableVec.push_back(table);
             }
 
             ism.close();
 
-            cout << "read ";
-            cout << dbConfig.dbName << endl;
+            // cout << "read ";
+            // cout << dbConfig.dbName << endl;
+            return true;
         }
 
         bool writeDBConfigToMeta() {
@@ -250,16 +289,10 @@ class SM_SystemManager {
             outfile << dbConfig.tableNum << endl;
 
             for(int i = 0; i < dbConfig.tableNum; ++i) {
-                Table table = dbConfig.tableVec[i];
-                outfile << table.tableName << endl;
-                outfile << table.attrNum << endl;
-                outfile << table.recordSize << endl;
-
-                for(int j = 0; j < table.attrNum; ++j) {
-                    outfile << table.attrVec[j];
-                }
+                outfile << dbConfig.tableVec[i];
             }
             outfile.close();
+            return true;
         }
 
 
