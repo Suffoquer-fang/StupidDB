@@ -55,6 +55,7 @@ inline string AttrType2Str(AttrType a) {
     if(a == FLOAT_TYPE) return "FLOAT";
     if(a == STRING_TYPE) return "STRING";
     if(a == DATE_TYPE) return "DATE";
+    return "UNKNOWN TYPE";
 }
 
 inline string Attr2Str(void* pData, AttrType type, int len) {
@@ -70,6 +71,7 @@ inline string Attr2Str(void* pData, AttrType type, int len) {
     if(type == STRING_TYPE) {
         return string((char*)pData, len - 1);
     }
+    return "UNKNOWN";
 }
 
 inline void debugCompareOP(CompareOP op) {
@@ -87,9 +89,26 @@ inline void debugCompareOP(CompareOP op) {
 
 
 enum RC {
+    NO_ERROR,
     ERROR_DB_NOT_EXIST,
     ERROR_TABLE_NOT_EXIST,
     ERROR_COLUMN_NOT_EXIST,
+    ERROR_TABLE_ALREADY_EXIST,
+    ERROR_CLOUMN_ALREARY_EXIST,
+    ERROR_DB_ALREADY_EXIST,
+    ERROR_COLUMN_HAS_INDEX,
+    ERROR_COLUMN_HAS_NOT_INDEX,
+    ERROR_PRIMARYKEY_EXIST,
+    ERROR_PRIMARYKEY_CONFLICT,
+    ERROR_PRIMARYKEY_NOT_EXIST,
+    ERROR_PRIMARYKEY_WRONG_PKNAME,
+    ERROR_NOT_NULL_CONFLICT,
+    ERROR_COLUMN_NUM_NOT_MATCH,
+    ERROR_TYPE_NOT_MATCH,
+    ERROR_STRING_TOO_LONG,
+    ERROR_FOREIGNKEY_CONFLICT,
+    ERROR_INDEX_ALREADY_EXIST,
+
 };
 
 

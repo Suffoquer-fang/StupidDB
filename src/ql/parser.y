@@ -63,9 +63,7 @@ stmt:
     alterStmt';'
     |
     EXIT ';' {
-      cout << "exit db" << endl;
-      qm->sm->closeDB();
-      exit(0);
+      qm->exitProgram();
     }
     ;
 
@@ -131,16 +129,13 @@ idxStmt:
 
 alterStmt: 
       ALTER TABLE tbName ADD field {
-        qm->alterAddfield();
-        cout << "Not Supported" << endl;
+        qm->alterAddfield($3, $5);
       }
     | ALTER TABLE tbName DROP colName {
-      qm->alterDropCol();
-      cout << "Not Supported" << endl;
+      qm->alterDropCol($3, $5);
     }
     | ALTER TABLE tbName CHANGE colName field {
-      qm->alterChange();
-      cout << "Not Supported" << endl;
+      qm->alterChange($3, $5, $6);
     }
     | ALTER TABLE tbName RENAME TO tbName {
       qm->alterRename($3, $6);

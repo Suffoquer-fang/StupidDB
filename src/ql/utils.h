@@ -59,6 +59,7 @@ struct FieldInfo {
 	bool isForeignKey;
 	string refTableName;
 	string refColName;
+	
 };
 
 struct Expr {

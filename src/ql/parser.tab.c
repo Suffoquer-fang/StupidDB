@@ -550,14 +550,14 @@ static const yytype_int8 yyrhs[] =
 static const yytype_uint16 yyrline[] =
 {
        0,    50,    50,    52,    55,    57,    59,    61,    63,    65,
-      73,    76,    79,    82,    85,    89,    92,    95,    98,   101,
-     104,   107,   111,   118,   121,   124,   127,   133,   137,   141,
-     145,   148,   151,   154,   157,   160,   166,   167,   171,   175,
-     180,   184,   189,   194,   203,   207,   211,   215,   222,   223,
-     227,   228,   232,   237,   241,   245,   249,   254,   260,   269,
-     272,   278,   282,   290,   293,   298,   298,   298,   298,   298,
-     298,   301,   302,   306,   312,   321,   322,   328,   333,   341,
-     348,   357,   359,   361,   363,   365,   367
+      71,    74,    77,    80,    83,    87,    90,    93,    96,    99,
+     102,   105,   109,   116,   119,   122,   125,   131,   134,   137,
+     140,   143,   146,   149,   152,   155,   161,   162,   166,   170,
+     175,   179,   184,   189,   198,   202,   206,   210,   217,   218,
+     222,   223,   227,   232,   236,   240,   244,   249,   255,   264,
+     267,   273,   277,   285,   288,   293,   293,   293,   293,   293,
+     293,   296,   297,   301,   307,   316,   317,   323,   328,   336,
+     343,   352,   354,   356,   358,   360,   362
 };
 #endif
 
@@ -1594,205 +1594,200 @@ yyreduce:
         case 9:
 #line 65 "parser.y"
     {
-      cout << "exit db" << endl;
-      qm->sm->closeDB();
-      exit(0);
+      qm->exitProgram();
     ;}
     break;
 
   case 10:
-#line 73 "parser.y"
+#line 71 "parser.y"
     {qm->showDatabases();;}
     break;
 
   case 11:
-#line 76 "parser.y"
+#line 74 "parser.y"
     {
         qm->createDatabase((yyvsp[(3) - (3)].id));
       ;}
     break;
 
   case 12:
-#line 79 "parser.y"
+#line 77 "parser.y"
     {
       qm->dropDatabase((yyvsp[(3) - (3)].id));
     ;}
     break;
 
   case 13:
-#line 82 "parser.y"
+#line 80 "parser.y"
     {
       qm->useDatabase((yyvsp[(2) - (2)].id));
     ;}
     break;
 
   case 14:
-#line 85 "parser.y"
+#line 83 "parser.y"
     {qm->showTables();;}
     break;
 
   case 15:
-#line 89 "parser.y"
+#line 87 "parser.y"
     {
         qm->createTable((yyvsp[(3) - (6)].id), (yyvsp[(5) - (6)].fieldList));
       ;}
     break;
 
   case 16:
-#line 92 "parser.y"
+#line 90 "parser.y"
     {
         qm->dropTable((yyvsp[(3) - (3)].id));
     ;}
     break;
 
   case 17:
-#line 95 "parser.y"
+#line 93 "parser.y"
     {
         qm->descTable((yyvsp[(2) - (2)].id));
     ;}
     break;
 
   case 18:
-#line 98 "parser.y"
+#line 96 "parser.y"
     {
         qm->insertIntoTable((yyvsp[(3) - (5)].id), (yyvsp[(5) - (5)].valueLists));
     ;}
     break;
 
   case 19:
-#line 101 "parser.y"
+#line 99 "parser.y"
     {
         qm->deleteFromTable((yyvsp[(3) - (5)].id), (yyvsp[(5) - (5)].whereClauseList));
     ;}
     break;
 
   case 20:
-#line 104 "parser.y"
+#line 102 "parser.y"
     {
         qm->updateTable((yyvsp[(2) - (6)].id), (yyvsp[(4) - (6)].setClauseList), (yyvsp[(6) - (6)].whereClauseList));
     ;}
     break;
 
   case 21:
-#line 108 "parser.y"
+#line 106 "parser.y"
     {
         qm->selectFromTables((yyvsp[(2) - (6)].selector), (yyvsp[(4) - (6)].tableList), (yyvsp[(6) - (6)].whereClauseList));
       ;}
     break;
 
   case 22:
-#line 112 "parser.y"
+#line 110 "parser.y"
     {
         qm->selectFromTables((yyvsp[(2) - (4)].selector), (yyvsp[(4) - (4)].tableList));
       ;}
     break;
 
   case 23:
-#line 118 "parser.y"
+#line 116 "parser.y"
     {
         qm->createIndex((yyvsp[(5) - (8)].id), (yyvsp[(3) - (8)].id), (yyvsp[(7) - (8)].colList));
       ;}
     break;
 
   case 24:
-#line 121 "parser.y"
+#line 119 "parser.y"
     {
         qm->dropIndex((yyvsp[(3) - (3)].id));
     ;}
     break;
 
   case 25:
-#line 124 "parser.y"
+#line 122 "parser.y"
     {
       qm->alterAddIndex((yyvsp[(3) - (9)].id), (yyvsp[(6) - (9)].id), (yyvsp[(8) - (9)].colList));
     ;}
     break;
 
   case 26:
-#line 127 "parser.y"
+#line 125 "parser.y"
     {
       qm->alterDropIndex((yyvsp[(3) - (6)].id), (yyvsp[(6) - (6)].id));
     ;}
     break;
 
   case 27:
-#line 133 "parser.y"
+#line 131 "parser.y"
     {
-        qm->alterAddfield();
-        cout << "Not Supported" << endl;
+        qm->alterAddfield((yyvsp[(3) - (5)].id), (yyvsp[(5) - (5)]._field));
       ;}
     break;
 
   case 28:
-#line 137 "parser.y"
+#line 134 "parser.y"
     {
-      qm->alterDropCol();
-      cout << "Not Supported" << endl;
+      qm->alterDropCol((yyvsp[(3) - (5)].id), (yyvsp[(5) - (5)].id));
     ;}
     break;
 
   case 29:
-#line 141 "parser.y"
+#line 137 "parser.y"
     {
-      qm->alterChange();
-      cout << "Not Supported" << endl;
+      qm->alterChange((yyvsp[(3) - (6)].id), (yyvsp[(5) - (6)].id), (yyvsp[(6) - (6)]._field));
     ;}
     break;
 
   case 30:
-#line 145 "parser.y"
+#line 140 "parser.y"
     {
       qm->alterRename((yyvsp[(3) - (6)].id), (yyvsp[(6) - (6)].id));
     ;}
     break;
 
   case 31:
-#line 148 "parser.y"
+#line 143 "parser.y"
     {
       qm->alterDropPrimaryKey((yyvsp[(3) - (6)].id), "", false);
     ;}
     break;
 
   case 32:
-#line 151 "parser.y"
+#line 146 "parser.y"
     {
       qm->alterAddPrimaryKey((yyvsp[(3) - (11)].id), (yyvsp[(6) - (11)].id), (yyvsp[(10) - (11)].colList));
     ;}
     break;
 
   case 33:
-#line 154 "parser.y"
+#line 149 "parser.y"
     {
       qm->alterDropPrimaryKey((yyvsp[(3) - (7)].id), (yyvsp[(7) - (7)].id), true);
     ;}
     break;
 
   case 34:
-#line 157 "parser.y"
+#line 152 "parser.y"
     {
       qm->alterAddForeignKey((yyvsp[(3) - (16)].id), (yyvsp[(6) - (16)].id), (yyvsp[(10) - (16)].colList), (yyvsp[(13) - (16)].id), (yyvsp[(15) - (16)].colList));
     ;}
     break;
 
   case 35:
-#line 160 "parser.y"
+#line 155 "parser.y"
     {
       qm->alterDropForeignKey((yyvsp[(3) - (7)].id), (yyvsp[(7) - (7)].id));
     ;}
     break;
 
   case 36:
-#line 166 "parser.y"
+#line 161 "parser.y"
     {(yyval.fieldList).push_back((yyvsp[(1) - (1)]._field));;}
     break;
 
   case 37:
-#line 167 "parser.y"
+#line 162 "parser.y"
     {(yyval.fieldList).push_back((yyvsp[(3) - (3)]._field));;}
     break;
 
   case 38:
-#line 171 "parser.y"
+#line 166 "parser.y"
     {
         (yyval._field).colName = (yyvsp[(1) - (2)].id);
         (yyval._field).type = (yyvsp[(2) - (2)]._type);
@@ -1800,7 +1795,7 @@ yyreduce:
     break;
 
   case 39:
-#line 175 "parser.y"
+#line 170 "parser.y"
     {
         (yyval._field).colName = (yyvsp[(1) - (4)].id);
         (yyval._field).type = (yyvsp[(2) - (4)]._type);
@@ -1809,7 +1804,7 @@ yyreduce:
     break;
 
   case 40:
-#line 180 "parser.y"
+#line 175 "parser.y"
     {
         (yyval._field).colName = (yyvsp[(1) - (4)].id);
         (yyval._field).type = (yyvsp[(2) - (4)]._type);
@@ -1817,7 +1812,7 @@ yyreduce:
     break;
 
   case 41:
-#line 184 "parser.y"
+#line 179 "parser.y"
     {
         (yyval._field).colName = (yyvsp[(1) - (6)].id);
         (yyval._field).type = (yyvsp[(2) - (6)]._type);
@@ -1826,7 +1821,7 @@ yyreduce:
     break;
 
   case 42:
-#line 189 "parser.y"
+#line 184 "parser.y"
     {
         (yyval._field).isPrimaryKey = true;
         (yyval._field).is_not_null = true;
@@ -1835,7 +1830,7 @@ yyreduce:
     break;
 
   case 43:
-#line 194 "parser.y"
+#line 189 "parser.y"
     {
         (yyval._field).isForeignKey = true;
         (yyval._field).colName = (yyvsp[(4) - (10)].id);
@@ -1845,7 +1840,7 @@ yyreduce:
     break;
 
   case 44:
-#line 203 "parser.y"
+#line 198 "parser.y"
     {
         (yyval._type).type = INTEGER_TYPE;
         (yyval._type).attrLen = 4;
@@ -1853,7 +1848,7 @@ yyreduce:
     break;
 
   case 45:
-#line 207 "parser.y"
+#line 202 "parser.y"
     {
         (yyval._type).type = STRING_TYPE;
         (yyval._type).attrLen = atoi((yyvsp[(3) - (4)].id).c_str());
@@ -1861,7 +1856,7 @@ yyreduce:
     break;
 
   case 46:
-#line 211 "parser.y"
+#line 206 "parser.y"
     {
         (yyval._type).type = STRING_TYPE;
         (yyval._type).attrLen = 10;
@@ -1869,7 +1864,7 @@ yyreduce:
     break;
 
   case 47:
-#line 215 "parser.y"
+#line 210 "parser.y"
     {
         (yyval._type).type = FLOAT_TYPE;
         (yyval._type).attrLen = 4;
@@ -1877,27 +1872,27 @@ yyreduce:
     break;
 
   case 48:
-#line 222 "parser.y"
+#line 217 "parser.y"
     {(yyval.valueLists).push_back((yyvsp[(2) - (3)].valueList));;}
     break;
 
   case 49:
-#line 223 "parser.y"
+#line 218 "parser.y"
     {(yyval.valueLists).push_back((yyvsp[(4) - (5)].valueList));;}
     break;
 
   case 50:
-#line 227 "parser.y"
+#line 222 "parser.y"
     {(yyval.valueList).push_back((yyvsp[(1) - (1)]._value));;}
     break;
 
   case 51:
-#line 228 "parser.y"
+#line 223 "parser.y"
     {(yyval.valueList).push_back((yyvsp[(3) - (3)]._value));;}
     break;
 
   case 52:
-#line 232 "parser.y"
+#line 227 "parser.y"
     {
         (yyval._value).valueType = INTEGER_TYPE; 
         (yyval._value).value_int = atoi((yyvsp[(1) - (1)].id).c_str());
@@ -1906,7 +1901,7 @@ yyreduce:
     break;
 
   case 53:
-#line 237 "parser.y"
+#line 232 "parser.y"
     {
         (yyval._value).valueType = FLOAT_TYPE; 
         (yyval._value).value_float = (float)(atof((yyvsp[(1) - (1)].id).c_str()));
@@ -1914,7 +1909,7 @@ yyreduce:
     break;
 
   case 54:
-#line 241 "parser.y"
+#line 236 "parser.y"
     {
         (yyval._value).valueType = STRING_TYPE; 
         (yyval._value).value_string = (yyvsp[(1) - (1)].id);
@@ -1922,12 +1917,12 @@ yyreduce:
     break;
 
   case 55:
-#line 245 "parser.y"
+#line 240 "parser.y"
     {(yyval._value).value_null = true;;}
     break;
 
   case 56:
-#line 249 "parser.y"
+#line 244 "parser.y"
     {
         (yyval._whereClause).col = (yyvsp[(1) - (3)]._col);
         (yyval._whereClause).op = (yyvsp[(2) - (3)]._op);
@@ -1936,7 +1931,7 @@ yyreduce:
     break;
 
   case 57:
-#line 254 "parser.y"
+#line 249 "parser.y"
     {
         (yyval._whereClause).col = (yyvsp[(1) - (3)]._col);
         (yyval._whereClause).op = EQ_OP;
@@ -1946,7 +1941,7 @@ yyreduce:
     break;
 
   case 58:
-#line 260 "parser.y"
+#line 255 "parser.y"
     {
         (yyval._whereClause).col = (yyvsp[(1) - (4)]._col);
         (yyval._whereClause).op = NE_OP;
@@ -1956,21 +1951,21 @@ yyreduce:
     break;
 
   case 59:
-#line 269 "parser.y"
+#line 264 "parser.y"
     {
         (yyval.whereClauseList).push_back((yyvsp[(1) - (1)]._whereClause));
       ;}
     break;
 
   case 60:
-#line 272 "parser.y"
+#line 267 "parser.y"
     {
       (yyval.whereClauseList).push_back((yyvsp[(3) - (3)]._whereClause));
     ;}
     break;
 
   case 61:
-#line 278 "parser.y"
+#line 273 "parser.y"
     {
         (yyval._col).colName = (yyvsp[(1) - (1)].id);
         (yyval._col).hasTableName = false;
@@ -1978,7 +1973,7 @@ yyreduce:
     break;
 
   case 62:
-#line 282 "parser.y"
+#line 277 "parser.y"
     {
         (yyval._col).tableName = (yyvsp[(1) - (3)].id);
         (yyval._col).colName = (yyvsp[(3) - (3)].id);
@@ -1987,61 +1982,61 @@ yyreduce:
     break;
 
   case 63:
-#line 290 "parser.y"
+#line 285 "parser.y"
     {
 		  (yyval.colList).push_back((yyvsp[(1) - (1)]._col));
     ;}
     break;
 
   case 64:
-#line 293 "parser.y"
+#line 288 "parser.y"
     {
       (yyval.colList).push_back((yyvsp[(3) - (3)]._col));
   ;}
     break;
 
   case 65:
-#line 298 "parser.y"
+#line 293 "parser.y"
     {(yyval._op) = EQ_OP;;}
     break;
 
   case 66:
-#line 298 "parser.y"
+#line 293 "parser.y"
     {(yyval._op) = NE_OP;;}
     break;
 
   case 67:
-#line 298 "parser.y"
+#line 293 "parser.y"
     {(yyval._op) = LE_OP;;}
     break;
 
   case 68:
-#line 298 "parser.y"
+#line 293 "parser.y"
     {(yyval._op) = GE_OP;;}
     break;
 
   case 69:
-#line 298 "parser.y"
+#line 293 "parser.y"
     {(yyval._op) = LT_OP;;}
     break;
 
   case 70:
-#line 298 "parser.y"
+#line 293 "parser.y"
     {(yyval._op) = GT_OP;;}
     break;
 
   case 71:
-#line 301 "parser.y"
+#line 296 "parser.y"
     {(yyval._expr).isValue = true; (yyval._expr).value = (yyvsp[(1) - (1)]._value);;}
     break;
 
   case 72:
-#line 302 "parser.y"
+#line 297 "parser.y"
     {(yyval._expr).isValue = false; (yyval._expr).col = (yyvsp[(1) - (1)]._col);;}
     break;
 
   case 73:
-#line 306 "parser.y"
+#line 301 "parser.y"
     {
         SetClauseInfo temp;
         temp.colName = (yyvsp[(1) - (3)].id);
@@ -2051,7 +2046,7 @@ yyreduce:
     break;
 
   case 74:
-#line 312 "parser.y"
+#line 307 "parser.y"
     {
         SetClauseInfo temp;
         temp.colName = (yyvsp[(3) - (5)].id);
@@ -2061,17 +2056,17 @@ yyreduce:
     break;
 
   case 75:
-#line 321 "parser.y"
+#line 316 "parser.y"
     {(yyval.selector).isSelectAll = true;;}
     break;
 
   case 76:
-#line 322 "parser.y"
+#line 317 "parser.y"
     {(yyval.selector).isSelectAll = false; (yyval.selector).colList = (yyvsp[(1) - (1)].colList);;}
     break;
 
   case 77:
-#line 328 "parser.y"
+#line 323 "parser.y"
     {
 		  TableInfo temp;
 		  temp.tableName = (yyvsp[(1) - (1)].id);
@@ -2080,7 +2075,7 @@ yyreduce:
     break;
 
   case 78:
-#line 333 "parser.y"
+#line 328 "parser.y"
     {
 		  TableInfo temp;
 		  temp.tableName = (yyvsp[(3) - (3)].id);
@@ -2089,7 +2084,7 @@ yyreduce:
     break;
 
   case 79:
-#line 341 "parser.y"
+#line 336 "parser.y"
     {
 		  ColInfo temp;
 		  temp.colName = (yyvsp[(1) - (1)].id);
@@ -2100,7 +2095,7 @@ yyreduce:
     break;
 
   case 80:
-#line 348 "parser.y"
+#line 343 "parser.y"
     {
 		ColInfo temp;
 		temp.colName = (yyvsp[(3) - (3)].id);
@@ -2111,38 +2106,38 @@ yyreduce:
     break;
 
   case 81:
-#line 357 "parser.y"
+#line 352 "parser.y"
     {(yyval.id) = (yyvsp[(1) - (1)].id);;}
     break;
 
   case 82:
-#line 359 "parser.y"
+#line 354 "parser.y"
     { (yyval.id) = (yyvsp[(1) - (1)].id);;}
     break;
 
   case 83:
-#line 361 "parser.y"
+#line 356 "parser.y"
     { (yyval.id) = (yyvsp[(1) - (1)].id);;}
     break;
 
   case 84:
-#line 363 "parser.y"
+#line 358 "parser.y"
     { (yyval.id) = (yyvsp[(1) - (1)].id);;}
     break;
 
   case 85:
-#line 365 "parser.y"
+#line 360 "parser.y"
     { (yyval.id) = (yyvsp[(1) - (1)].id);;}
     break;
 
   case 86:
-#line 367 "parser.y"
+#line 362 "parser.y"
     { (yyval.id) = (yyvsp[(1) - (1)].id); ;}
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 2146 "parser.tab.c"
+#line 2141 "parser.tab.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2356,7 +2351,7 @@ yyreturn:
 }
 
 
-#line 370 "parser.y"
+#line 365 "parser.y"
 
 
 void yyerror(const char *s)

@@ -8,6 +8,7 @@
 #include <map>
 #include <iostream>
 #include <fstream>
+#include "../utils/errorHandler.h"
 using namespace std;
 
 struct AttrInfo {
@@ -45,6 +46,7 @@ struct AttrInfo {
 		in >> attr.offset;
 		in >> attr.hasIndex;
 		in >> attr.isNotNULL;
+        return in;
 	}
 };
 
@@ -342,80 +344,85 @@ class Table {
 
 
 
-    bool createIndex(const string attr, bool primary, RM_FileHandle* fh) {
+    bool createIndex(string& attr, bool primary, RM_FileHandle* fh) {
         int attrID = findAttr(attr);
-        if(attrID == -1) return false;
+        if(attrID == -1) {
+            ErrorHandler::instance().set_error_code(RC::ERROR_COLUMN_NOT_EXIST);
+            ErrorHandler::instance().push_arg(attr);
+            return false;
+        }
         AttrInfo& attrInfo = attrVec[attrID];
 
         if(attrInfo.hasIndex) return true;
         attrVec[attrID].hasIndex = true;
 
-        // cout << "www" << endl;
-
         ix->createIndex(tableName.c_str(), attrID, attrInfo.attrType, attrInfo.attrLen);
-        // cout << "www" << endl;
+        
         int indexID;
         ix->openIndex(tableName.c_str(), attrID, indexID);
         IX_IndexHandle* ih = ix->getIndexHandle(indexID);
-        // cout << "www" << endl;
+
         RM_FileScan *scan = new RM_FileScan();
         scan->OpenScan(fh, attrInfo.attrType, attrInfo.attrLen, attrInfo.offset, NO_OP, nullptr);
-        // cout << fh->fileConfig.recordSize << endl;
-        // cout << tableName << endl;
-        // cout << attr << endl;
+        
         uint *data = new uint[fh->fileConfig.recordSize];
         RID rid;
         
         while(true) {
             if(!scan->next(data, rid)) break;
-            // cout << "insert " << rid.pageID << " " << rid.slotID << endl;
             char* pData = ((char*)data) + attrInfo.offset;
 
-            // if(primary && !checkPrimaryKey(data)) {
-            //     cout << "multiple" << endl;
-            //     delete [] data;
-            //     delete scan;
-            //     delete ih;
-            //     delete fh;
-            //     ix->closeIndex(indexID);
-            //     return false;
-            // }
             ih->insertEntry(pData, rid);
         }
         delete [] data;
         delete scan;
-
         delete ih;
 
         ix->closeIndex(indexID);
         return true;
     }
 
-    bool dropIndex(const string attr) {
+    bool dropIndex(string &attr) {
 
         int attrID = findAttr(attr);
-        if(attrID == -1) return false;
-
-        if(attrVec[attrID].hasIndex == false)
+        if(attrID == -1) {
+            ErrorHandler::instance().set_error_code(RC::ERROR_COLUMN_NOT_EXIST);
+            ErrorHandler::instance().push_arg(attr);
+            ErrorHandler::instance().push_arg(tableName);
             return false;
+        }
+        if(attrVec[attrID].hasIndex == false) {
+            ErrorHandler::instance().set_error_code(RC::ERROR_COLUMN_HAS_NOT_INDEX);
+            ErrorHandler::instance().push_arg(attr);
+            ErrorHandler::instance().push_arg(tableName);
+        }
         attrVec[attrID].hasIndex = false;
         ix->destroyIndex(tableName.c_str(), attrID);
 
         return true;
     }
 
-    bool addPrimaryKey(vector<string> attrs, RM_FileHandle* fh) {
+    bool addPrimaryKey(string& pk, vector<string> attrs, RM_FileHandle* fh) {
         
-        if(primaryKey.idVec.size() > 0) return false;
+        if(primaryKey.idVec.size() > 0) {
+            ErrorHandler::instance().set_error_code(RC::ERROR_PRIMARYKEY_EXIST);
+            ErrorHandler::instance().push_arg(tableName);
+            return false;
+        }
 
-        // cout << "wwwww" << endl;
+        this->pkName = pk;
+
         for(auto &attr: attrs) {
             int attrID = findAttr(attr);
-            if(attrID == -1) return false;
+            if(attrID == -1) {
+                ErrorHandler::instance().set_error_code(RC::ERROR_COLUMN_NOT_EXIST);
+                ErrorHandler::instance().push_arg(attr);
+                ErrorHandler::instance().push_arg(tableName);
+                return false;
+            }
 
             primaryKey.idVec.push_back(attrID);
 
-            // cout << "wwwww" << endl;
             attrVec[attrID].isNotNULL = true;
             bool ret = createIndex(attr, false, fh);
             if(!ret) {
@@ -423,14 +430,28 @@ class Table {
                 return false;
             }
         }
-
-
-        
         
         return true;
     }
 
-    bool dropPrimaryKey() {}
+    bool dropPrimaryKey(string& pk, bool checkName = false) {
+        if(primaryKey.idVec.size() == 0) {
+            ErrorHandler::instance().set_error_code(RC::ERROR_PRIMARYKEY_NOT_EXIST);
+            ErrorHandler::instance().push_arg(tableName);
+            return false;
+        }
+        if(checkName && pk != pkName) {
+            ErrorHandler::instance().set_error_code(RC::ERROR_PRIMARYKEY_WRONG_PKNAME);
+            ErrorHandler::instance().push_arg(pk);
+            ErrorHandler::instance().push_arg(pkName);
+            ErrorHandler::instance().push_arg(tableName);
+            return false;
+        }
+
+        primaryKey.idVec.clear();
+        return true;
+
+    }
 
     bool checkValidRecord(void* pData, RM_FileHandle* fh) {
         // return true;
@@ -438,7 +459,8 @@ class Table {
             char* attr = (char*)pData + attrVec[i].offset;
 
             if(attrVec[i].isNotNULL && attr[0] != 0) {
-                cout << "ERROR: Insert NULL to not NULL Column" << endl;
+                ErrorHandler::instance().set_error_code(RC::ERROR_NOT_NULL_CONFLICT);
+                ErrorHandler::instance().push_arg(attrVec[i].attrName);
                 return false;
             }
         }
@@ -478,7 +500,6 @@ class Table {
         bool ret = fh->insertRecord((uint*)pData, rid);
         if(!ret) return false;
 
-        // cout << "fh insert done" << endl;
         for(int i = 0; i < attrNum; ++i) {
             char* attr = (char*)pData + attrVec[i].offset;
 

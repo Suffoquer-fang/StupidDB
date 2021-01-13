@@ -20,18 +20,19 @@ class QL_QueryManager {
    bool isInDB = false;
    string curDB;
 	QL_QueryManager() {
-        // sm = new SM_SystemManager();
-        system("mkdir data");
+        if (access("data", 0) == -1) {
+            system("mkdir data");				
+        }
         chdir("data");
-
         FormatPrinter::instance().printWelcome();
     }
-	~QL_QueryManager() {}
+	~QL_QueryManager() {
+
+    }
 
     void showDatabases() {
         const char *rootDir = "./";
-
-
+        FormatPrinter::set_blue();
         FormatPrinter::instance().setLineWidth(10);
         FormatPrinter::instance().printHeaderLine();
         FormatPrinter::instance().printString("DATABASES", -1, 1, 1, 1, 1);
@@ -50,7 +51,11 @@ class QL_QueryManager {
          }
         closedir(dir);
         FormatPrinter::instance().printHeaderLine();
+        FormatPrinter::success();
+        FormatPrinter::info("Show Database");
+        FormatPrinter::endline();
     }
+
     void createDatabase(string dbName) {
         if(isInDB)
             chdir("..");
@@ -61,10 +66,10 @@ class QL_QueryManager {
         outfile << 0;
         outfile.close();
         chdir("..");
-
-        cout << "Create Database ";
+        FormatPrinter::success();
+        FormatPrinter::info("Create Database ");
         FormatPrinter::quoteString(dbName);
-        cout << endl;
+        FormatPrinter::endline();
     }
     void dropDatabase(string dbName) {
         if(isInDB)
@@ -74,24 +79,42 @@ class QL_QueryManager {
 	    system(strcat(command, dbName.c_str()));
         isInDB = false;
         curDB = "";
-        cout << "Drop Database ";
+
+
+        FormatPrinter::success();
+        FormatPrinter::info("Drop Database ");
         FormatPrinter::quoteString(dbName);
-        cout << endl;
+        FormatPrinter::endline();
     }
     void useDatabase(string dbName) {
         if(isInDB) {
-            cout << "before" << endl;
+            sm->closeDB();
             chdir("..");
+            isInDB = false;
+            curDB = "";
         }
-        isInDB = true;
-        curDB = dbName;
-        sm->openDB(dbName.c_str());
-        cout << "Use Database ";
-        FormatPrinter::quoteString(dbName);
-        cout << endl;
+        bool ret = sm->openDB(dbName.c_str());
+        FormatPrinter::printError();
+        if(ret) {
+            isInDB = true;
+            curDB = dbName;
+            FormatPrinter::success();
+            FormatPrinter::info("Use Database ");
+            FormatPrinter::quoteString(dbName);
+            FormatPrinter::endline();
+        } 
     }
     void showTables() {
-        sm->showTables();
+        if(isInDB) {
+            sm->showTables();
+            FormatPrinter::success();
+            FormatPrinter::info("Show Tables In Database ");
+            FormatPrinter::quoteString(curDB);
+            FormatPrinter::endline();
+        } else {
+            FormatPrinter::printError();
+        }
+        
     }
 
     void createTable(string tableName, vector<FieldInfo> fieldList) {
@@ -115,11 +138,18 @@ class QL_QueryManager {
             table.addAttr(attr);
         }
 
-        sm->createTable(table);
+        bool ret = sm->createTable(table);
+        if(!ret) {
+            FormatPrinter::printError();
+            return ;
+        }
 
-        for(auto &field: fieldList) {
+        
+
+        for(int i = 0; i < fieldList.size(); ++i) {
+            FieldInfo& field = fieldList[i];
             if(field.isPrimaryKey) {
-                alterAddPrimaryKey(tableName, "primary", field.colList);
+                alterAddPrimaryKey(tableName, "primary", field.colList, false);
             }
             if(field.isForeignKey) {
                 vector<ColInfo> cols;
@@ -131,23 +161,38 @@ class QL_QueryManager {
                 refCol.tableName = field.refTableName;
                 cols.push_back(col);
                 refCols.push_back(refCol);
-                alterAddForeignKey(tableName, "fkName", cols, field.refTableName, refCols);
+                alterAddForeignKey(tableName, "fk" + to_string(i), cols, field.refTableName, refCols, false);
             }
         }
 
+        FormatPrinter::success();
+        FormatPrinter::info("Create Table ");
+        FormatPrinter::quoteString(tableName);
+        FormatPrinter::endline();
         
 
     }
     void dropTable(string tableName) {
-        
-        sm->dropTable(tableName);
+        bool ret = sm->dropTable(tableName);
+        FormatPrinter::printError();
+        if(ret) {
+            FormatPrinter::success();
+            FormatPrinter::info("Drop Table ");
+            FormatPrinter::quoteString(tableName);
+            FormatPrinter::endline();
+        }
     }
+
+
     void descTable(string tableName) {
         int tableID = sm->findTable(tableName);
         if(tableID == -1) {
-            FormatPrinter::printError(RC::ERROR_TABLE_NOT_EXIST, vector<string>(1, tableName));
+            ErrorHandler::instance().set_error_code(RC::ERROR_TABLE_NOT_EXIST);
+            ErrorHandler::instance().push_arg(tableName);
+            FormatPrinter::printError();
             return;
         }
+        FormatPrinter::set_blue();
         Table &temp = sm->dbConfig.tableVec[tableID];
         FormatPrinter::instance().setLineWidth(50);
         FormatPrinter::instance().printHeaderLine();
@@ -189,34 +234,53 @@ class QL_QueryManager {
             }
         }   
         FormatPrinter::instance().printHeaderLine();
-
+        FormatPrinter::success();
+        FormatPrinter::info("Desc Table ");
+        FormatPrinter::quoteString(tableName);
+        FormatPrinter::endline();
     }
     void insertIntoTable(string tableName, vector<vector<ValueInfo> > valueLists) {
         int tableID = sm->findTable(tableName);
         if(tableID == -1) {
-            FormatPrinter::instance().printError(RC::ERROR_TABLE_NOT_EXIST, 
-                                vector<string>(1, tableName));
+            ErrorHandler::instance().set_error_code(RC::ERROR_TABLE_NOT_EXIST);
+            ErrorHandler::instance().push_arg(tableName);
+            FormatPrinter::printError();
             return;
         }
+
         for(int i = 0; i < valueLists.size(); ++i) {
             char *pData = buildData(tableName, valueLists[i]);
 
-            if(!pData) return;
+            if(!pData) {
+                FormatPrinter::printError();
+                return;
+            }
             if(!checkForeignKey(tableName, pData)) {
-                cout << "ERROR: Foreign Key Reference Failed" << endl;
-                // cout << 
+                FormatPrinter::printError();
                 return;
             }
             sm->insertIntoTable(tableName, pData);
             delete [] pData;
         }
-        
+        FormatPrinter::success();
+        int size = valueLists.size();
+        if(size == 1) {
+            FormatPrinter::info("Insert 1 Record Into Table ");
+        } else {
+            FormatPrinter::info("Insert " + to_string(valueLists.size()) + " Record Into Table ");
+        } 
+        FormatPrinter::quoteString(tableName);
+        FormatPrinter::endline();
 
     }
+
+
     void deleteFromTable(string tableName, vector<WhereClauseInfo> whereClauseList) {
         int tableID = sm->findTable(tableName);
         if(tableID == -1) {
-            cout << "ERROR: Table Not Exists" << endl;
+            ErrorHandler::instance().set_error_code(RC::ERROR_TABLE_NOT_EXIST);
+            ErrorHandler::instance().push_arg(tableName);
+            FormatPrinter::printError();
             return;
         }
         Conditions conds;
@@ -240,7 +304,9 @@ class QL_QueryManager {
     void updateTable(string tableName, vector<SetClauseInfo> setClauseList, vector<WhereClauseInfo> whereClauseList) {
         int tableID = sm->findTable(tableName);
         if(tableID == -1) {
-            cout << "ERROR: Table Not Exists" << endl;
+            ErrorHandler::instance().set_error_code(RC::ERROR_TABLE_NOT_EXIST);
+            ErrorHandler::instance().push_arg(tableName);
+            FormatPrinter::printError();
             return;
         }
         vector<RID> rids;
@@ -277,7 +343,7 @@ class QL_QueryManager {
         }
 
         if(!checkForeignKey(tableName, pData)) {
-            cout << "ERROR: Foreign Key Reference Failed" << endl;
+            FormatPrinter::printError();
             return;
         }
 
@@ -299,7 +365,6 @@ class QL_QueryManager {
     }
 
     void selectFromTables(SelectorInfo selector, vector<TableInfo> tableList, vector<WhereClauseInfo> whereClauseList = vector<WhereClauseInfo>()) {
-        
         if(!isInDB) {
             cout << "ERROR: Use Database First" << endl;
             return;
@@ -384,7 +449,7 @@ class QL_QueryManager {
             }
         }
 
-
+        FormatPrinter::set_blue();
         
         int lineSize = tableIDs.size() * 20 + 1;
         for(int i = 0; i < lineSize; ++i)
@@ -424,6 +489,8 @@ class QL_QueryManager {
         for(int i = 0; i < lineSize; ++i)
             cout << "-";
         cout << endl;
+
+        FormatPrinter::endline();
     }
 
     void debug(uint* pData) {
@@ -475,36 +542,21 @@ class QL_QueryManager {
 
 
     void createIndex(string tableName, string idxName, vector<ColInfo> colList) {
-        int tableID = sm->findTable(tableName);
-        if(tableID == -1) {
-            cout << "ERROR: Table Not Exists" << endl;
-            return;
-        }
-        Table &temp = sm->dbConfig.tableVec[tableID];
-        multiCol new_idx;
+        vector<string> attrs;
         for(auto col: colList) {
-            int attrID = sm->dbConfig.tableVec[tableID].findAttr(col.colName);
-            new_idx.idVec.push_back(attrID);
+            attrs.push_back(col.colName);
         }
 
-        for(auto idx: temp.indexVec) {
-            if(idx.eq(new_idx)) {
-                cout << "ERROR: Index Already Exists" << endl;
-                return;
-            }
+        bool ret = sm->createIndex(tableName, idxName, attrs);
+        FormatPrinter::printError();
+        if(ret) {
+            FormatPrinter::success();
+            FormatPrinter::info("Create Index ");
+            FormatPrinter::quoteString(idxName);
+            FormatPrinter::info(" On Table ");
+            FormatPrinter::quoteString(tableName);
+            FormatPrinter::endline();
         }
-
-        temp.indexVec.push_back(new_idx);
-        temp.idxNameVec.push_back(idxName);
-
-        cout << tableName << endl;
-        int fileID = sm->fileIDMap[tableName];
-        RM_FileHandle* fh = sm->rm->getFileHandle(fileID);
-        for (auto& col: colList) {
-            temp.createIndex(col.colName, false, fh);
-        }
-
-        delete fh;
         
     }
     void dropIndex(string idxName) {
@@ -531,82 +583,103 @@ class QL_QueryManager {
         
     }
 
-    void alterAddfield() {}
-    void alterDropCol() {}
+    void alterAddfield(string tableName, FieldInfo field) {
+        
+        AttrInfo attr;
+        if (field.isPrimaryKey || field.isForeignKey) {
+            FormatPrinter::printError();
+            return;
+        }
+        attr.attrName = field.colName;
+        attr.attrType = field.type.type;
+        attr.attrLen = field.type.attrLen;
+        attr.hasIndex = false;
+        attr.isNotNULL = field.is_not_null;
+        
+        bool ret = sm->alterAddCol(tableName, attr);
+        FormatPrinter::printError();
 
-    void alterChange() {}
+        if(ret) {
+            FormatPrinter::success();
+            FormatPrinter::info("Add Column ");
+            FormatPrinter::quoteString(field.colName);
+            FormatPrinter::info(" To Table ");
+            FormatPrinter::quoteString(tableName);
+            FormatPrinter::endline();
+        }
+        
+    }
+    void alterDropCol(string tableName, string colName) {
+        bool ret = true;
+        if(ret) {
+            FormatPrinter::success();
+            FormatPrinter::info("Drop Column ");
+            FormatPrinter::quoteString(colName);
+            FormatPrinter::info(" From Table ");
+            FormatPrinter::quoteString(tableName);
+            FormatPrinter::endline();
+        }
+    }
+
+    void alterChange(string tableName, string colName, FieldInfo field) {
+        bool ret = true;
+        if(ret) {
+            FormatPrinter::success();
+            FormatPrinter::info("Change Column ");
+            FormatPrinter::quoteString(colName);
+            FormatPrinter::info(" In Table ");
+            FormatPrinter::quoteString(tableName);
+            FormatPrinter::endline();
+        }
+    }
 
     void alterRename(string oldName, string newName) {
         if(oldName == newName) return;
-        int tableID = sm->findTable(oldName);
-        if(tableID == -1) {
-            cout << "ERROR: Table Not Exists" << endl;
-            return;
+        bool ret = sm->renameTable(oldName, newName);
+        FormatPrinter::printError();
+        if(ret) {
+            FormatPrinter::success();
+            FormatPrinter::info("Rename ");
+            FormatPrinter::quoteString(oldName);
+            FormatPrinter::info(" To ");
+            FormatPrinter::quoteString(newName);
+            FormatPrinter::endline();
         }
-
-        if(sm->findTable(newName) != -1) {
-            cout << "ERROR: New Name Already Exists" << endl;
-            return;
-        }
-
-        sm->dbConfig.tableVec[tableID].tableName = newName;
-        
-        for(int i = 0; i < sm->dbConfig.tableNum; ++i) {
-            Table &temp = sm->dbConfig.tableVec[i];
-            for(auto &t: temp.refTableVec) {
-                if (t == oldName)
-                    t = newName;
-            }
-        }
-
-        sm->fileIDMap[newName] = sm->fileIDMap[oldName];
-        rename(oldName.c_str(), newName.c_str());
-
-        rename((oldName + ".*").c_str(), (newName + ".*").c_str());
-
     }
 
     void alterDropPrimaryKey(string tableName, string pkName, bool check) {
-        int tableID = sm->findTable(tableName);
-        if(tableID == -1) {
-            cout << "ERROR: Table Not Exists" << endl;
-            return;
+        bool ret = sm->dropPrimaryKey(tableName, pkName, check);
+        FormatPrinter::printError();
+        if(ret) {
+            FormatPrinter::success();
+            FormatPrinter::info("Drop Primary Key On Table ");
+            FormatPrinter::quoteString(tableName);
+            FormatPrinter::endline();
         }
-        if(check) {
-            if(pkName != sm->dbConfig.tableVec[tableID].pkName) {
-                cout << "ERROR: Primary Key '"<< pkName <<"' Not Exists" << endl;
-                return;
-            }
-        }
-
-        sm->dbConfig.tableVec[tableID].primaryKey.idVec.clear();
-
     }
 
 
-    void alterAddPrimaryKey(string tableName, string pkName, vector<ColInfo> colList) {
-        int tableID = sm->findTable(tableName);
-        if(tableID == -1) {
-            cout << "ERROR: Table Not Exists" << endl;
-            return;
-        }
-        Table &temp = sm->dbConfig.tableVec[tableID];
-        temp.pkName = pkName;
-
+    void alterAddPrimaryKey(string tableName, string pkName, vector<ColInfo> colList, bool print = true) {
+        
         vector<string> attrs;
         for(auto &col: colList) {
             attrs.push_back(col.colName);
         }
-        // cout << "ssss" << endl;
-        bool ret = sm->addPrimaryKey(tableName, attrs);
-        // cout << "ssss" << endl;
-        if(!ret) {
-            cout << "ERROR: Can Not Add Primary Key" << endl;
+
+        bool ret = sm->addPrimaryKey(pkName, tableName, attrs);
+        FormatPrinter::printError();
+        if(ret && print) {
+            FormatPrinter::success();
+            FormatPrinter::info("Add Primary Key ");
+            FormatPrinter::quoteString(pkName);
+            FormatPrinter::info(" On Table ");
+            FormatPrinter::quoteString(tableName);
+            FormatPrinter::endline();
         }
         
 
     }
-    void alterAddForeignKey(string tableName, string fkName, vector<ColInfo> colList, string refTableName, vector<ColInfo> refColList) {
+    void alterAddForeignKey(string tableName, string fkName, vector<ColInfo> colList, string refTableName, vector<ColInfo> refColList, bool print = true) {
         int tableID = sm->findTable(tableName);
         int refTableID = sm->findTable(refTableName);
         if(tableID == -1) {
@@ -706,16 +779,15 @@ class QL_QueryManager {
     bool checkForeignKey(string tableName, char* pData) {
         int tableID = sm->findTable(tableName);
         if(tableID == -1) {
-            // cout << "Table '" << tableName << "' not Exists" << endl;
             return false;
         }
         Table &table = sm->dbConfig.tableVec[tableID];
         for(int i = 0; i < table.foreignKeyVec.size(); ++i) {
             string refTableName = table.refTableVec[i];
-            // cout << refTableName << endl;
             Table &ref = sm->dbConfig.tableVec[sm->findTable(refTableName)];
-            // cout << "fffff" << endl;
             if(!checkSingleForeignKey(table, ref, pData, table.foreignKeyVec[i], table.refColVec[i])) {
+                ErrorHandler::instance().set_error_code(RC::ERROR_FOREIGNKEY_CONFLICT);
+                ErrorHandler::instance().push_arg(refTableName);
                 return false;
             }
         }
@@ -723,8 +795,7 @@ class QL_QueryManager {
     }
 
     bool checkSingleForeignKey(Table& table, Table& ref, char* pData, multiCol& attr, multiCol& refAttr) {
-        // cout << ref.tableName << endl;
-        // cout << ref.recordSize << endl;
+        
         char* refData = new char [ref.recordSize];
         memset(refData, 0, ref.recordSize);
         for(int i = 0; i < attr.idVec.size(); ++i) {
@@ -740,7 +811,6 @@ class QL_QueryManager {
             }
 
             memcpy(refData + refOff, pData + off, len);
-
         }
         return !sm->checkPrimaryKeyNotExist(ref.tableName, refData);
     }
@@ -754,6 +824,13 @@ class QL_QueryManager {
         char *ret = new char[temp.recordSize];
         memset(ret, 0, temp.recordSize);
         
+        if(values.size() != temp.attrVec.size()) {
+            ErrorHandler::instance().set_error_code(RC::ERROR_COLUMN_NUM_NOT_MATCH);
+            ErrorHandler::instance().push_arg(to_string(temp.attrVec.size()));
+            ErrorHandler::instance().push_arg(to_string(values.size()));
+            delete [] ret;
+            return nullptr;
+        }
 
         for(int i = 0; i < values.size(); ++i) {
             if(values[i].value_null) {
@@ -767,15 +844,20 @@ class QL_QueryManager {
                     values[i].value_float = (float)values[i].value_int;
                     
                 } else {
-                cout << "ERROR: Type Not Match" << endl;
-                delete [] ret;
-                return nullptr;
+                    ErrorHandler::instance().set_error_code(RC::ERROR_TYPE_NOT_MATCH);
+                    ErrorHandler::instance().push_arg(temp.attrVec[i].attrName);
+                    ErrorHandler::instance().push_arg(AttrType2Str(temp.attrVec[i].attrType));
+                    ErrorHandler::instance().push_arg(AttrType2Str(values[i].valueType));
+                    delete [] ret;
+                    return nullptr;
                 }
             }
 
             if(values[i].valueType == STRING_TYPE) {
                 if(values[i].value_string.length() > temp.attrVec[i].attrLen - 1) {
-                    cout << "ERROR: Input String Too Long" << endl;
+                    ErrorHandler::instance().set_error_code(RC::ERROR_STRING_TOO_LONG);
+                    ErrorHandler::instance().push_arg(temp.attrVec[i].attrName);
+                    ErrorHandler::instance().push_arg(to_string(temp.attrVec[i].attrLen - 1));
                     delete [] ret;
                     return nullptr;
                 }
@@ -913,5 +995,13 @@ class QL_QueryManager {
         Table &temp = sm->dbConfig.tableVec[tableID];
         int attrID = temp.findAttr(col.colName);
         return temp.attrVec[attrID].offset;
+    }
+
+    void exitProgram() {
+        FormatPrinter::success();
+        FormatPrinter::info("Exit\n\n");
+        FormatPrinter::purple("Goodbye\n\n");
+        sm->closeDB();
+        exit(0);
     }
 };

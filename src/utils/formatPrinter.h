@@ -1,8 +1,9 @@
-#pragma once;
+#pragma once
 #include <iostream>
 #include "constants.h"
 #include <vector>
 #include <cstdio>
+#include "errorHandler.h"
 using namespace std;
 
 
@@ -22,15 +23,18 @@ class FormatPrinter {
 
         void setLineWidth(int w) {this->curLineWidth = w;}
 
-        void printWelcome() {
-            cout << "   _____ __              _     ______  ____" << endl;
-            cout << "  / ___// /___  ______  (_)___/ / __ \\/ __ )" << endl;
-            cout << "  \\__ \\/ __/ / / / __ \\/ / __  / / / / __  |" << endl;
-            cout << " ___/ / /_/ /_/ / /_/ / / /_/ / /_/ / /_/ / " << endl;
-            cout << "/____/\\__/\\__,_/ .___/_/\\__,_/_____/_____/  " << endl;
-            cout << "              /_/                           " << endl;
-
-            cout << "Welcome to Stupid DB" << endl;
+        static void printWelcome() {
+            printf("\033[1m\033[32m");
+            cout << "   _____ __              _     __   ____  ____ " << endl;
+            cout << "  / ___// /___  ______  (_)___/ /  / __ \\/ __ )" << endl;
+            cout << "  \\__ \\/ __/ / / / __ \\/ / __  /  / / / / __  |" << endl;
+            cout << " ___/ / /_/ /_/ / /_/ / / /_/ /  / /_/ / /_/ / " << endl;
+            cout << "/____/\\__/\\__,_/ .___/_/\\__,_/  /_____/_____/  " << endl;
+            cout << "              /_/            " << endl;
+            
+            printf("\033[0m");
+            purple("Welcom to Stupid DB\n");
+            endline();
         }
 
         void printHeaderLine(char c = '-') {
@@ -57,7 +61,7 @@ class FormatPrinter {
                 spaceNum = 1;
             }
             if(leftCol) cout << "|";
-            if(left) {
+            if(!left) {
                 for(int i = 0; i < spaceNum; ++i)
                     cout << " ";
                 cout << temp;
@@ -70,29 +74,53 @@ class FormatPrinter {
             if(newLine) cout << endl;
         }
         static void quoteString(string &s) {
-            cout << "'" << s << "'";
+            purple("'" + s + "'");
         }
-        static void error() {
-            cout << "ERROR: ";
+        
+        static void set_blue() {
+            printf("\033[1m\033[34m");
         }
-        static void printError(RC code, vector<string> args) {
-            error();
-            if(code == RC::ERROR_DB_NOT_EXIST) {
-                cout << "Database ";
-                quoteString(args[0]);
-                cout << " Not Exists";
-            } else if(code == RC::ERROR_TABLE_NOT_EXIST) {
-                cout << "Table ";
-                quoteString(args[0]);
-                cout << " Not Exists";    
-            } else if(code == RC::ERROR_COLUMN_NOT_EXIST) {
-                cout << "Column ";
-                quoteString(args[0]);
-                cout << " Not Exists";
-            } else {
-                cout << "Unknown Error";
-            }
-            cout << endl;
+
+        static void reset_color() {
+            printf("\033[0m");
+        }
+        static void red(const string& s) {
+            printf("\033[1m\033[31m%s\033[0m", s.c_str());
+        }
+        static void green(const string& s) {
+            printf("\033[1m\033[32m%s\033[0m", s.c_str());
+        }
+
+        static void blue(const string& s) {
+            printf("\033[1m\033[34m%s\033[0m", s.c_str());
+        }
+        static void purple(const string& s) {
+            printf("\033[1m\033[35m%s\033[0m", s.c_str());
+        }
+
+        static void yellow(const string& s) {
+            printf("\033[1m\033[33m%s\033[0m", s.c_str());
+        }
+        
+        static void success() {
+            blue("SUCCESS: ");
+        }
+
+        static void printError() {
+            if(!ErrorHandler::instance().has_error()) return;
+            red("ERROR: ");
+            purple(ErrorHandler::instance().to_string());
+            endline();
+            ErrorHandler::instance().pop_error();
+        }
+
+        static void info(const string& s) {
+            yellow(s);
+        }
+        static void endline() {
+            cout << endl << endl;
+            green("--> ");
+            printf("\033[1m\033[32m");
         }
     
 };
