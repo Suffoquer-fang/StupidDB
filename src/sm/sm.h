@@ -179,8 +179,21 @@ class SM_SystemManager {
                 }
             }
 
+
+            rm->closeFile(fileID);
+
             rename((tableName + "-temp").c_str(), tableName.c_str());
             dbConfig.tableVec[tableID] = newTable;
+
+            for(int i = 0; i < newTable.attrNum; ++i) {
+                if(newTable.attrVec[i].hasIndex) {
+                    FormatPrinter::debug("create index " + newTable.attrVec[i].attrName);
+                    dbConfig.tableVec[tableID].attrVec[i].hasIndex = false;
+                    dbConfig.tableVec[tableID].createIndex(newTable.attrVec[i].attrName, false, new_fh);
+                }
+            }
+
+
 
             delete [] data;
             delete old_fh;
@@ -189,6 +202,155 @@ class SM_SystemManager {
             return true;
         }
 
+        bool alterDropCol(string tableName, string colName) {
+            int tableID = findTable(tableName);
+            if(tableID == -1) {
+                ErrorHandler::instance().set_error_code(RC::ERROR_TABLE_NOT_EXIST);
+                ErrorHandler::instance().push_arg(tableName);
+                return false;
+            }
+
+            Table &temp = dbConfig.tableVec[tableID];
+            int attrID = temp.findAttr(colName);
+            if(attrID == -1) {
+                ErrorHandler::instance().set_error_code(RC::ERROR_COLUMN_NOT_EXIST);
+                ErrorHandler::instance().push_arg(colName);
+                return false;
+            }
+
+            //check other foreignkey
+            if(temp.primaryKey.contains(attrID)) {
+                for(auto &table: dbConfig.tableVec) {
+                    for(auto &name: table.refTableVec) {
+                        if(name == tableName) {
+                            ErrorHandler::instance().set_error_code(RC::ERROR_DROP_REF_COLUMN);
+                            ErrorHandler::instance().push_arg(colName);
+                            ErrorHandler::instance().push_arg(name);
+                            return false;
+                        }
+                    }
+                }
+            }
+
+
+
+
+            int fileID = fileIDMap[tableName];
+            RM_FileHandle* old_fh = rm->getFileHandle(fileID);
+            
+            Table newTable;
+            newTable.init(tableName, rm, ix);
+            for(int i = 0; i < temp.attrNum; ++i) {
+                if(i == attrID) continue;
+                newTable.addAttr(temp.attrVec[i]);
+            }
+            
+            if(!temp.primaryKey.contains(attrID)) {
+                newTable.primaryKey = temp.primaryKey;
+                for(auto& i: newTable.primaryKey.idVec) {
+                    if(i > attrID) i -= 1;
+                }
+            }
+
+
+
+            for(int i = 0; i < temp.foreignKeyVec.size(); ++i) {
+                if(temp.foreignKeyVec[i].contains(attrID)) continue;
+                newTable.fkNameVec.push_back(temp.fkNameVec[i]);
+                multiCol tempMultiCol = temp.foreignKeyVec[i];
+                for(auto &t: tempMultiCol.idVec) {
+                    if(t > attrID) t -= 1;
+                }
+                newTable.foreignKeyVec.push_back(tempMultiCol);
+            }
+
+            for(int i = 0; i < temp.idxNameVec.size(); ++i) {
+                if(temp.indexVec[i].contains(attrID)) continue;
+                newTable.idxNameVec.push_back(temp.idxNameVec[i]);
+                multiCol tempMultiCol = temp.indexVec[i];
+                for(auto &t: tempMultiCol.idVec) {
+                    if(t > attrID) t -= 1;
+                }
+                newTable.indexVec.push_back(tempMultiCol);
+            }
+
+            for(auto &table: dbConfig.tableVec) {
+                for(int i = 0; i < table.foreignKeyVec.size(); ++i) {
+                    if(table.fkNameVec[i] == tableName) {
+                        for(auto &t: table.foreignKeyVec[i].idVec) {
+                            if(t > attrID) t -= 1;
+                        }
+                    }
+                }
+            }
+
+
+            int newFileID;
+
+            rm->createFile((tableName + "-temp").c_str(), newTable.recordSize);
+            rm->openFile((tableName + "-temp").c_str(), newFileID);
+
+            RM_FileHandle* new_fh = rm->getFileHandle(newFileID);
+
+            uint* data = new uint[new_fh->fileConfig.recordSize];
+            uint* old_data = new uint[old_fh->fileConfig.recordSize];
+            RM_FileScan oldScan;
+            RID rid;
+            oldScan.OpenScan(old_fh, STRING_TYPE, 0, 0, NO_OP, nullptr);
+            while(true) {
+                if(!oldScan.next(old_data)) break;
+                for(int i = 0; i < newTable.attrNum; ++i) {
+                    int old_id = i < attrID ? i : i + 1;
+                    char* old_attr = (char*)old_data + temp.attrVec[old_id].offset;
+                    char* new_attr = (char*)data + newTable.attrVec[i].offset;
+                    memcpy(new_attr, old_attr, newTable.attrVec[i].attrLen);
+                }
+
+                // cout << "debug" << endl;
+                // for(int i = 0; i < temp.recordSize; ++i) {
+                //     cout << ((char*)old_data)[i] - '\0' << " ";
+                // }
+                // cout << endl;
+                // for(int i = 0; i < newTable.recordSize; ++i) {
+                //     cout << ((char*)data)[i] - '\0' << " ";
+                // }
+                // cout << endl;
+
+
+                new_fh->insertRecord(data, rid);
+            }
+
+            fileIDMap[tableName] = newFileID;
+            rm->destroyFile(tableName.c_str());
+
+            for(int i = 0; i < temp.attrNum; ++i) {
+                if(temp.attrVec[i].hasIndex) {
+                    ix->destroyIndex(tableName.c_str(), i);
+                }
+            }
+
+            rename((tableName + "-temp").c_str(), tableName.c_str());
+            dbConfig.tableVec[tableID] = newTable;
+
+            for(int i = 0; i < newTable.attrNum; ++i) {
+                if(newTable.attrVec[i].hasIndex) {
+                    dbConfig.tableVec[tableID].attrVec[i].hasIndex = false;
+                    dbConfig.tableVec[tableID].createIndex(newTable.attrVec[i].attrName, false, new_fh);
+                }
+            }
+
+
+            rm->closeFile(fileID);
+
+            delete [] data;
+            delete [] old_data;
+            delete old_fh;
+            delete new_fh;
+
+            return true;
+
+
+        }
 
         bool createIndex(string &tableName, string &idxName, vector<string>& attrs) {
             int tableID = findTable(tableName);

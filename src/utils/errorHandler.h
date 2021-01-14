@@ -70,6 +70,8 @@ class ErrorHandler {
                 ret = "Foreign Key Conflict, Values Not Exist In Reference Table " + args[0];
             } else if(error_code == RC::ERROR_INDEX_ALREADY_EXIST) {
                 ret = "Index '" + args[0] + "' Already Exists";
+            } else if(error_code == RC::ERROR_DROP_REF_COLUMN) {
+                ret = "Drop Column '" + args[0] + "' Which Is Referenced As Forerign Key By Table '" + args[1] + "'";
             }
             else {
                 ret = "UNKNOWN ERROR";

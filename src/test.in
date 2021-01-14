@@ -1,16 +1,19 @@
-use myDB;
-INSERT INTO nation VALUES (0,'America',0, 'nothing left');
-INSERT INTO nation VALUES ('id86','America',0, 'nothing left');
-INSERT INTO orders VALUES (127664,315000,'F',6.5,'2018/2/29',0,'Clerk101',1,'nice service');
-DELETE FROM customer WHERE C_CUSTKEY=5;
-UPDATE partsupp SET PS_AVAILQTY = 8774 WHERE PS_PARTKEY=12;
-SELECT * FROM customer WHERE C_NATIONKEY < 10;
-SELECT O_ORDERDATE,O_TOTALPRICE FROM orders WHERE O_ORDERDATE='1996-01-02';
-SELECT C_PHONE,O_ORDERSTATUS FROM customer,orders where C_CUSTKEY=O_CUSTKEY AND C_NAME='Customer#000000001';
-
-
-UPDATE nation SET N_REGIONKEY = 316001 WHERE N_NATIONKEY = 15;
-ALTER TABLE customer ADD INDEX IDX(C_ACCTBAL);
-
-SELECT C_NAME, O_ORDERSTATUS, N_NATIONKEY FROM customer,orders,nation  WHERE C_CUSTKEY=O_CUSTKEY AND C_NATIONKEY=N_NATIONKEY and N_NAME='CHINA                    ';
-SELECT C_NAME, O_ORDERSTATUS, N_NATIONKEY FROM customer,orders,nation,region WHERE C_CUSTKEY=O_CUSTKEY AND C_NATIONKEY=N_NATIONKEY AND N_REGIONKEY=R_REGIONKEY AND N_NAME='CHINA                    ';
+create database db;
+use db;
+create table t1 (a INT(4), b FLOAT);
+desc t1;
+insert into t1 values (1, 2.1), (2, 4.5), (3, 2.55);
+select * from t1;
+select * from t1 where a = 1;
+create index id1 on t1 (a);
+create index id2 on t1 (a, b);
+select * from t1 where a = 2;
+alter table t1 add c VARCHAR(10);
+desc t1;
+select * from t1;
+select * from t1 where a = 1;
+select * from t1 where b = 4.5;
+alter table t1 drop a;
+desc t1;
+select * from t1 where b = 4.5;
+exit;

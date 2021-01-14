@@ -150,6 +150,11 @@ struct multiCol {
         }
         return true;
     }
+    bool contains(int id) {
+        for(auto i: idVec)
+            if(i == id) return true;
+        return false;
+    }
     friend ostream &operator<<(ostream &out, const multiCol& t) { 
         out << t.idVec.size() << endl;
         for(auto i: t.idVec) {
@@ -424,6 +429,7 @@ class Table {
             primaryKey.idVec.push_back(attrID);
 
             attrVec[attrID].isNotNULL = true;
+            
             bool ret = createIndex(attr, false, fh);
             if(!ret) {
                 primaryKey.idVec.clear();
@@ -617,6 +623,7 @@ class Table {
         // int first = -1;
         // first = -1;
         // cout << first << endl;
+        
         if(first != -1) {
             int indexID = 0;
             ix->openIndex(tableName.c_str(), first, indexID);

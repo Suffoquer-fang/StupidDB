@@ -247,7 +247,8 @@ class QL_QueryManager {
             FormatPrinter::printError();
             return;
         }
-
+        bool ret = true;
+        int size = 0;
         for(int i = 0; i < valueLists.size(); ++i) {
             char *pData = buildData(tableName, valueLists[i]);
 
@@ -259,11 +260,15 @@ class QL_QueryManager {
                 FormatPrinter::printError();
                 return;
             }
-            sm->insertIntoTable(tableName, pData);
+            ret = sm->insertIntoTable(tableName, pData);
+            if(!ret) {
+                FormatPrinter::printError();
+                return;
+            }
+            size += 1;
             delete [] pData;
         }
         FormatPrinter::success();
-        int size = valueLists.size();
         if(size == 1) {
             FormatPrinter::info("Insert 1 Record Into Table ");
         } else {
@@ -610,7 +615,8 @@ class QL_QueryManager {
         
     }
     void alterDropCol(string tableName, string colName) {
-        bool ret = true;
+        bool ret = sm->alterDropCol(tableName, colName);
+        FormatPrinter::printError();
         if(ret) {
             FormatPrinter::success();
             FormatPrinter::info("Drop Column ");
@@ -622,7 +628,24 @@ class QL_QueryManager {
     }
 
     void alterChange(string tableName, string colName, FieldInfo field) {
-        bool ret = true;
+        AttrInfo attr;
+        if (field.isPrimaryKey || field.isForeignKey) {
+            FormatPrinter::printError();
+            return;
+        }
+        attr.attrName = field.colName;
+        attr.attrType = field.type.type;
+        attr.attrLen = field.type.attrLen;
+        attr.hasIndex = false;
+        attr.isNotNULL = field.is_not_null;
+
+        bool ret = sm->alterDropCol(tableName, colName);
+        if(!ret) {
+            FormatPrinter::printError();
+            return;
+        }
+        ret = sm->alterAddCol(tableName, attr);
+        FormatPrinter::printError();
         if(ret) {
             FormatPrinter::success();
             FormatPrinter::info("Change Column ");
@@ -666,7 +689,7 @@ class QL_QueryManager {
             attrs.push_back(col.colName);
         }
 
-        bool ret = sm->addPrimaryKey(pkName, tableName, attrs);
+        bool ret = sm->addPrimaryKey(tableName, pkName, attrs);
         FormatPrinter::printError();
         if(ret && print) {
             FormatPrinter::success();

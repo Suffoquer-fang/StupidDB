@@ -73,6 +73,14 @@ class FormatPrinter {
             if(rightCol) cout << "|";
             if(newLine) cout << endl;
         }
+
+
+        static void debug(const string &s) {
+            red("DEBUG: ");
+            red(s);
+            cout << endl;
+        }   
+
         static void quoteString(string &s) {
             purple("'" + s + "'");
         }
