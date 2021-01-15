@@ -303,7 +303,14 @@ class QL_QueryManager {
             conds.addCond(cond);
         }
 
-        sm->deleteFromTable(tableName, conds);
+        bool ret = sm->deleteFromTable(tableName, conds);
+        FormatPrinter::printError();
+        if(ret) {
+            FormatPrinter::success();
+            FormatPrinter::info("Delete From Table ");
+            FormatPrinter::quoteString(tableName);
+            FormatPrinter::endline();
+        }
     }
     
     void updateTable(string tableName, vector<SetClauseInfo> setClauseList, vector<WhereClauseInfo> whereClauseList) {
@@ -353,8 +360,15 @@ class QL_QueryManager {
         }
 
 
-        sm->updateTable(tableName, sets, conds);
+        bool ret = sm->updateTable(tableName, sets, conds);
 
+        FormatPrinter::printError();
+        if(ret) {
+            FormatPrinter::success();
+            FormatPrinter::info("Update Table ");
+            FormatPrinter::quoteString(tableName);
+            FormatPrinter::endline();
+        }
 
     }
 
@@ -490,11 +504,12 @@ class QL_QueryManager {
         cout << endl;
 
 
-        cout << "TOTAL RESULTS: " << total << endl;
-        for(int i = 0; i < lineSize; ++i)
-            cout << "-";
-        cout << endl;
-
+        FormatPrinter::success();
+        if(total <= 1) {
+            FormatPrinter::info("Select " + to_string(total) + " Record");
+        } else {
+            FormatPrinter::info("Select " + to_string(total) + " Records");
+        }
         FormatPrinter::endline();
     }
 
@@ -573,18 +588,15 @@ class QL_QueryManager {
         createIndex(tableName, idxName, colList);
     }
     void alterDropIndex(string tableName, string idxName) {
-        int tableID = sm->findTable(tableName);
-        if(tableID == -1) return;
-        Table &temp = sm->dbConfig.tableVec[tableID];
-
-        for(int i = 0; i < temp.idxNameVec.size(); ++i) {
-            if(temp.idxNameVec[i] == idxName) {
-                temp.idxNameVec.erase(temp.idxNameVec.begin() + i);
-                temp.indexVec.erase(temp.indexVec.begin() + i);
-                return;
-            }
+        bool ret = sm->dropIndex(tableName, idxName);
+        if(ret) {
+            FormatPrinter::success();
+            FormatPrinter::info("Drop Index ");
+            FormatPrinter::quoteString(idxName);
+            FormatPrinter::info(" On Table ");
+            FormatPrinter::quoteString(tableName);
+            FormatPrinter::endline();
         }
-        cout << "ERROR: Index Not Exists" << endl;
         
     }
 
@@ -703,81 +715,7 @@ class QL_QueryManager {
 
     }
     void alterAddForeignKey(string tableName, string fkName, vector<ColInfo> colList, string refTableName, vector<ColInfo> refColList, bool print = true) {
-        int tableID = sm->findTable(tableName);
-        int refTableID = sm->findTable(refTableName);
-        if(tableID == -1) {
-            cout << "ERROR: Table '" << tableName << "' not Exists" << endl;
-            return;
-        }
-        if(refTableID == -1) {
-            cout << "ERROR: Table '" << refTableName << "' not Exists" << endl;
-            return;
-        }
-
-
-        Table &table = sm->dbConfig.tableVec[tableID];
-        Table &ref = sm->dbConfig.tableVec[refTableID];
-
-        if(colList.size() != refColList.size()) {
-            cout << "ERROR: Reference Size Not Match" << endl;
-            return;
-        }
-
-
-        for(auto& s: table.fkNameVec) {
-            if(s == fkName) {
-                cout << "ERROR: Foreign Key '" << fkName << "' Already Exists" << endl;
-                return;
-            }
-        }
-
-        vector<string> attrs;
-        for(auto &col: colList) {
-            attrs.push_back(col.colName);
-        }
-
-        vector<string> refAttrs;
-        for(auto &col: refColList) {
-            refAttrs.push_back(col.colName);
-        }
-
-        vector<int> attrIDs;
-        vector<int> refIDs;
-        table.convertAttrToID(attrs, attrIDs);
-        ref.convertAttrToID(refAttrs, refIDs);
-
-        
-
-        for(int i = 0; i < attrIDs.size(); ++i) {
-            int attrID = attrIDs[i];
-            int refID = refIDs[i];
-            if(table.attrVec[attrID].attrType != ref.attrVec[refID].attrType) {
-                cout << "ERROR: Column Type Not Match" << endl;
-                return;
-            }
-            if(table.attrVec[attrID].attrLen != ref.attrVec[refID].attrLen) {
-                cout << "ERROR: Column Length Not Match" << endl;
-                return;
-            }
-        }
-
-        multiCol temp, refTemp;
-        temp.idVec = attrIDs;
-        refTemp.idVec = refIDs;
-
-        if(!ref.primaryKey.eq(refTemp)) {
-            cout << "ERROR: Reference Not Primary Key" << endl;
-            return;
-        }
-
-        table.fkNameVec.push_back(fkName);
-        table.foreignKeyVec.push_back(temp);
-
-        table.refTableVec.push_back(refTableName);
-        table.refColVec.push_back(refTemp);
-
-
-
+        sm->add
     }
     void alterDropForeignKey(string tableName, string fkName) {
         int tableID = sm->findTable(tableName);

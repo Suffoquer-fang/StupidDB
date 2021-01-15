@@ -392,6 +392,26 @@ class SM_SystemManager {
             return true;
         }
 
+        bool dropIndex(string &tableName, string &idxName) {
+            int tableID = findTable(tableName);
+            if(tableID == -1) {
+                ErrorHandler::instance().set_error_code(RC::ERROR_TABLE_NOT_EXIST);
+                ErrorHandler::instance().push_arg(tableName);
+                return false;
+            }
+            Table& temp = dbConfig.tableVec[tableID];
+            for(int i = 0; i < temp.idxNameVec.size(); ++i) {
+                if(temp.idxNameVec[i] == idxName) {
+                    temp.idxNameVec.erase(temp.idxNameVec.begin() + i);
+                    temp.indexVec.erase(temp.indexVec.begin() + i);
+                    return true;
+                }
+            }
+            ErrorHandler::instance().set_error_code(RC::ERROR_INDEX_NOT_EXIST);
+            ErrorHandler::instance().push_arg(idxName);
+            return false;
+        }
+
         bool addPrimaryKey(string &tableName,  string &pkName, vector<string> &attrs) {
             int tableID = findTable(tableName);
             if(tableID == -1) {
@@ -418,6 +438,92 @@ class SM_SystemManager {
             bool ret = dbConfig.tableVec[tableID].dropPrimaryKey(pkName, check);
             return ret;
         }
+
+        bool addForeignKey() {
+            int tableID = findTable(tableName);
+            int refTableID = findTable(refTableName);
+            if(tableID == -1) {
+                ErrorHandler::instance().set_error_code(RC::ERROR_TABLE_NOT_EXIST);
+                ErrorHandler::instance().push_arg(tableName);
+                return false;
+            }
+            if(refTableID == -1) {
+                ErrorHandler::instance().set_error_code(RC::ERROR_TABLE_NOT_EXIST);
+                ErrorHandler::instance().push_arg(tableName);
+                return false;
+            }
+
+
+            Table &table = dbConfig.tableVec[tableID];
+            Table &ref = dbConfig.tableVec[refTableID];
+
+            if(colList.size() != refColList.size()) {
+                ErrorHandler::instance().set_error_code(RC::ERROR_COLUMN_NUM_NOT_MATCH);
+                ErrorHandler::instance().push_arg(to_string(colList.size()));
+                ErrorHandler::instance().push_arg(to_string(refColList.size()));
+                
+                return false;
+            }
+
+
+            for(auto& s: table.fkNameVec) {
+                if(s == fkName) {
+                    ErrorHandler::instance().set_error_code(RC::ERROR_FOREIGNKEY_ALREADY_EXIST);
+                    ErrorHandler::instance().push_arg(fkName);
+                    return false;
+                }
+            }
+
+            vector<string> attrs;
+            for(auto &col: colList) {
+                attrs.push_back(col.colName);
+            }
+
+            vector<string> refAttrs;
+            for(auto &col: refColList) {
+                refAttrs.push_back(col.colName);
+            }
+
+            vector<int> attrIDs;
+            vector<int> refIDs;
+            table.convertAttrToID(attrs, attrIDs);
+            ref.convertAttrToID(refAttrs, refIDs);
+
+            
+
+            for(int i = 0; i < attrIDs.size(); ++i) {
+                int attrID = attrIDs[i];
+                int refID = refIDs[i];
+                if(table.attrVec[attrID].attrType != ref.attrVec[refID].attrType) {
+                    cout << "ERROR: Column Type Not Match" << endl;
+                    return;
+                }
+                if(table.attrVec[attrID].attrLen != ref.attrVec[refID].attrLen) {
+                    cout << "ERROR: Column Length Not Match" << endl;
+                    return;
+                }
+            }
+
+            multiCol temp, refTemp;
+            temp.idVec = attrIDs;
+            refTemp.idVec = refIDs;
+
+            if(!ref.primaryKey.eq(refTemp)) {
+                cout << "ERROR: Reference Not Primary Key" << endl;
+                return;
+            }
+
+            table.fkNameVec.push_back(fkName);
+            table.foreignKeyVec.push_back(temp);
+
+            table.refTableVec.push_back(refTableName);
+            table.refColVec.push_back(refTemp);
+
+
+
+        }
+
+        bool dropForeignKey() {}
 
 
 
@@ -545,6 +651,8 @@ class SM_SystemManager {
             for(int i = 0; i < rids.size(); ++i) {
                 dbConfig.tableVec[tableID].updateRecord(rids[i], sets, fh);
             }
+
+            return true;
 
         }
 

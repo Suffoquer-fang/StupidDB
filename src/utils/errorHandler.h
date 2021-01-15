@@ -72,6 +72,12 @@ class ErrorHandler {
                 ret = "Index '" + args[0] + "' Already Exists";
             } else if(error_code == RC::ERROR_DROP_REF_COLUMN) {
                 ret = "Drop Column '" + args[0] + "' Which Is Referenced As Forerign Key By Table '" + args[1] + "'";
+            } else if(error_code == RC::ERROR_INDEX_NOT_EXIST) {
+                ret = "Index '" + args[0] + "' Not Exists";
+            } else if(error_code == RC::ERROR_FOREIGNKEY_ALREADY_EXIST) {
+                ret = "Foreign Key '" + args[0] + "' Already Exists"; 
+            } else if(error_code == RC::ERROR_FOREIGNKEY_NOT_EXIST) {
+                ret = "Foreign Key '" + args[0] + "' Not Exists"; 
             }
             else {
                 ret = "UNKNOWN ERROR";
