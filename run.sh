@@ -1,19 +1,4 @@
-#!/bin/bash
-
-mkdir build
-
-cd build 
-
-cmake ..
-
-make
-
-make test 
-
-
-# g++ testfilesystem.cpp -o main
-# ./main
-# rm main
-# g++ test_rm.cpp -o main
-# ./main
-# rm main
+cd src/ql
+flex lex.l && bison -d parser.y 
+cd ../..
+g++ -std=c++11 src/main.cpp src/ql/*.c -o main

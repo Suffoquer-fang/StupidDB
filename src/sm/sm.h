@@ -242,6 +242,7 @@ class SM_SystemManager {
             newTable.init(tableName, rm, ix);
             for(int i = 0; i < temp.attrNum; ++i) {
                 if(i == attrID) continue;
+                temp.attrVec[i].attrLen -= 1;
                 newTable.addAttr(temp.attrVec[i]);
             }
             
@@ -439,7 +440,7 @@ class SM_SystemManager {
             return ret;
         }
 
-        bool addForeignKey() {
+        bool addForeignKey(string tableName, string fkName, vector<ColInfo> colList, string refTableName, vector<ColInfo> refColList) {
             int tableID = findTable(tableName);
             int refTableID = findTable(refTableName);
             if(tableID == -1) {
@@ -495,12 +496,19 @@ class SM_SystemManager {
                 int attrID = attrIDs[i];
                 int refID = refIDs[i];
                 if(table.attrVec[attrID].attrType != ref.attrVec[refID].attrType) {
-                    cout << "ERROR: Column Type Not Match" << endl;
-                    return;
+                    ErrorHandler::instance().set_error_code(RC::ERROR_TYPE_NOT_MATCH);
+                    ErrorHandler::instance().push_arg(refAttrs[i]);
+                    ErrorHandler::instance().push_arg(AttrType2Str(table.attrVec[attrID].attrType));
+                    ErrorHandler::instance().push_arg(AttrType2Str(ref.attrVec[refID].attrType));
+                    
+                    return false;
                 }
                 if(table.attrVec[attrID].attrLen != ref.attrVec[refID].attrLen) {
-                    cout << "ERROR: Column Length Not Match" << endl;
-                    return;
+                    ErrorHandler::instance().set_error_code(RC::ERROR_ATTRLEN_NOT_MATCH);
+                    ErrorHandler::instance().push_arg(to_string(table.attrVec[attrID].attrLen));
+                    ErrorHandler::instance().push_arg(to_string(ref.attrVec[refID].attrLen));
+                    
+                    return false;
                 }
             }
 
@@ -509,8 +517,9 @@ class SM_SystemManager {
             refTemp.idVec = refIDs;
 
             if(!ref.primaryKey.eq(refTemp)) {
-                cout << "ERROR: Reference Not Primary Key" << endl;
-                return;
+                ErrorHandler::instance().set_error_code(RC::ERROR_REF_NOT_PRIMARY);
+                ErrorHandler::instance().push_arg(refTableName);
+                return false;
             }
 
             table.fkNameVec.push_back(fkName);
@@ -520,10 +529,30 @@ class SM_SystemManager {
             table.refColVec.push_back(refTemp);
 
 
-
+            return true;
         }
 
-        bool dropForeignKey() {}
+        bool dropForeignKey(string tableName, string fkName) {
+            int tableID = findTable(tableName);
+            if(tableID == -1) {
+                ErrorHandler::instance().set_error_code(RC::ERROR_TABLE_NOT_EXIST);
+                ErrorHandler::instance().push_arg(tableName);
+                return false;
+            }
+            Table& table = dbConfig.tableVec[tableID];
+            for(int i = 0; i < table.fkNameVec.size(); ++i) {
+                if(table.fkNameVec[i] == fkName) {
+                    table.fkNameVec.erase(table.fkNameVec.begin() + i);
+                    table.foreignKeyVec.erase(table.foreignKeyVec.begin() + i);
+                    table.refTableVec.erase(table.refTableVec.begin() + i);
+                    table.refColVec.erase(table.refColVec.begin() + i);
+                    return true;
+                }
+            }
+            ErrorHandler::instance().set_error_code(RC::ERROR_FOREIGNKEY_NOT_EXIST);
+            ErrorHandler::instance().push_arg(tableName);
+            return false;
+        }
 
 
 
@@ -584,21 +613,7 @@ class SM_SystemManager {
             return ret;
         }
 
-        // bool selectFromTableAndPrint(string tableName, Conditions conds) {
-        //     int tableID = findTable(tableName);
-        //     if(tableID == -1) return false;
-
-        //     vector<RID> rids;
-        //     int fileID = fileIDMap[tableName];
-        //     RM_FileHandle *fh = rm->getFileHandle(fileID);
-        //     dbConfig.tableVec[tableID].selectRIDs(rids, conds, fh);
-
-        //     for(int i = 0; i < rids.size(); ++i) {
-        //         cout << dbConfig.tableVec[tableID].stringfy(rids[i], fh, vector<int>()) << endl;
-        //     }
-        //     delete fh;
-        //     return true;
-        // }
+        
 
         bool getRecordString(string tableName, vector<RID> &rids, vector<int> printOffs, vector<string>& ret) {
             int tableID = findTable(tableName);

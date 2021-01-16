@@ -2,7 +2,13 @@
 
 2017011462 方言
 
+本项目完全由单人完成
+
+Github: <a> https://github.com/Suffoquer-fang/StupidDB </a>
+
 ### 1. 系统架构设计
+
+![img](./imgs/frame.png)
 
 ### 2. 基础模块
 
@@ -93,11 +99,253 @@ Table模块负责对单个数据表进行管理。
 ### 4. 主要接口说明
 
 #### 4.1 FormatPrinter
+```c++
+class FormatPrinter {
+    static FormatPrinter& instance();
+    //获取单例
+    static void printWelcome();
+    //输出欢迎信息
+
+    //对应配置输出
+    void printHeaderLine();
+    void printMidLine();
+    void printString();
+
+    //设置输出颜色
+    static void red();
+    static void green();
+    static void blue();
+    static void purple();
+
+
+    static void printError();
+    //输出错误信息
+
+    static void endline();
+    //换行，输出行头的箭头
+
+};
+```
 #### 4.2 ErrorHandler
+```c++
+class ErrorHandler {
+    static ErrorHandler& instance();
+    //获取单例
+    void set_error_code(RC error);
+    //设置错误的Error Code
+    void push_arg(const string &arg);
+    //添加一个参数信息
+    string to_string();
+    //根据参数列表和Error Code，生成对应报错信息的string
+};
+```
 #### 4.3 RecordManager
+```c++
+class RM_RecordManager {
+    bool createFile();
+    //创建对应文件
+    bool destroyFile();
+    //删除对应文件
+    bool openFile();
+    //打开对应文件
+    bool closeFile();
+    //关闭对应文件
+    RM_FileHandle* getFileHandle();
+    //根据对应fileID返回一个FileHandle
+};
+class RM_FileHandle {
+    bool getRecord();
+    //根据RID获取对应Record
+    bool insertRecord();
+    //插入一条Record，返回RID
+    bool deleteRecord();
+    //根据RID删除一条Record
+    bool updateRecord();
+    //根据RID更新一条Record
+    void updateFileConfig();
+    //更新对应Config内容
+};
+class RM_FileScan {
+    bool OpenScan();
+    //打开Scan，设置FileHandle和对应条件
+    bool next();
+    //取回下一条符合条件的Record
+    bool satisfy();
+    //判断当前Record是否满足条件
+};
+```
 #### 4.4 IndexManager
+```c++
+class IX_IndexManager {
+    bool createIndex();
+    //创建索引文件并初始化
+    bool destroyIndex();
+    //删除索引文件
+    bool openIndex();
+    //打开索引文件
+    bool closeIndex();
+    //关闭索引文件
+    IX_IndexHandle* getIndexHandle();
+    //根据fileID返回一个对应的IndexHandle
+};
+
+class IX_IndexHandle {
+    bool insertEntry();
+    //插入一个Entry
+    bool deleteEntry();
+    //删除对应Entry
+    bool searchFirstEntry();
+    //找到对应key值的第一个Entry
+    bool searchLastEntry();
+    //找到对应key值的最后一个Entry
+    bool checkEntryExist();
+    //返回对应key值的Entry是否存在
+    void getFirstEntry();
+    //找到B+树内第一个Entry
+};
+
+class IX_IndexScan {
+    bool openScan();
+    //打开Scan，设置IndexHandle和对应条件
+    bool satisfy();
+    //判断当前Entry是否满足条件
+    bool stop();
+    //对于特定条件可以提前stop，而不需要遍历完B+树（比如查询小于某个k值）
+    bool next();
+    //取回下一条符合条件的Entry
+}
+```
 #### 4.5 Table
+```c++
+class Table {
+    string stringfy();
+    //根据某几个Column的Name构造出的string
+    friend ostream &operator<<();
+    //输出流，用于写入到meta文件
+    friend istream &operator>>();
+    //输入流，用于从meta文件中读取
+    void addAttr();
+    //添加一个字段
+    int findFirstWithIndex();
+    //找到条件中出现的第一个有index的字段
+
+    bool checkValidRecord();
+    //判断给定Record是否合法（字段类型匹配，主键冲突等）
+    bool createIndex();
+    //对给定某几个字段创建索引
+    bool dropIndex();
+    //丢弃给定索引
+    bool addPrimaryKey();
+    //对给定某几个字段创建主键
+    bool dropPrimaryKey();
+    //丢弃主键
+
+    bool insertRecord();
+    //插入一条Record
+    bool insertRecordIndex();
+    //根据Record向每个索引文件插入一条Entry
+    bool deleteRecord();
+    //给定RID，删除对应Record
+    bool deleteRecordIndex();
+    //给定RID和Record，在每个索引文件里删除对应Entry
+    bool updateRecord();
+    //给定RID，更新对应Record
+    bool selectRIDs();
+    //给定条件，选取符合条件的Record的RID
+};
+```
 #### 4.6 SystemManager
+```c++
+class SM_SystemManager {
+    bool openDB();
+    //打开对应DB，从meta文件中读取相应信息
+    bool closeDB();
+    //关闭对应DB，把相应信息写入到meta文件
+    bool createTable();
+    //创建数据表
+    bool dropTable();
+    //丢弃数据表
+    bool alterAddCol();
+    //对某个表添加一个字段
+    bool alterDropCol();
+    //对某个表丢弃一个字段
+    bool createIndex();
+    //对某个表创建索引
+    bool dropIndex();
+    //对某个表丢弃索引
+    bool addPrimaryKey();
+    //对某个表添加主键
+    bool dropPrimaryKey();
+    //对某个表丢弃主键
+    bool addForeignKey();
+    //对某个表添加外键
+    bool dropForeignKey();
+    //对某个表丢弃外键
+    bool insertIntoTable();
+    //插入数据
+    bool selectFromTable();
+    //查找数据
+    bool deleteFromTable();
+    //删除数据
+    bool updateTable();
+    //更新数据
+
+    void showTables();
+    //展现所有的数据表
+
+    bool readDBConfigFromMeta();
+    //从meta文件中读取相应信息
+    bool writeDBConfigToMeta();
+    //把相应信息写入到meta文件
+};
+```
+
+#### 4.7 QueryManager
+```c++
+class QL_QueryManager {
+    void showDatabases();
+    //展现所有的数据库信息
+    void createDatabase();
+    //创建数据库
+    void dropDatabase();
+    //丢弃数据库
+    void useDatabase();
+    //切换到数据库
+
+    //以下接口内容不详细介绍
+    //调用SM模块对应的借口，并且根据情况输出不同信息
+    void showTables();
+    void createTable();
+    void dropTable();
+    void descTable();
+    void insertIntoTable();
+    void deleteFromTable();
+    void updateTable();
+    void selectFromTables();
+    void createIndex();
+    void dropIndex();
+    void alterAddIndex();
+    void alterDropIndex();
+    void alterAddfield();
+    void alterDropCol();
+    void alterChange();
+    void alterRename();
+    void alterAddPrimaryKey();
+    void alterDropPrimaryKey();
+    void alterAddForeignKey();
+    void alterDropForeignKey();
+    void exitProgram();
+    //退出程序
+
+    char* buildData();
+    //根据用户输入构建Record
+    bool buildCondition();
+    //根据用户输入构建条件Condition
+    bool buildSetClause();
+    //根据用户输入构建Set语句信息
+
+}
+```
 
 ### 5. 实验结果
 实现了所有的基础命令，并且在测试数据上通过测试。成功完成选做部分的三表和四表联合查询。
@@ -107,8 +355,8 @@ Table模块负责对单个数据表进行管理。
 实现了比较友好的交互界面。
 
 全流程执行测试：
-* 导入界面
-
+* 欢迎界面
+    ![img](./imgs/welcome.jpeg)
 * 系统指令
     ```sql
     create database db;
@@ -121,8 +369,9 @@ Table模块负责对单个数据表进行管理。
     desc t1;
     alter table t1 drop c;
     desc t1;
-    
     ```
+    ![img](./imgs/system1.jpeg)
+    ![img](./imgs/system2.png)
 
 * 数据指令
     ```sql
@@ -134,13 +383,16 @@ Table模块负责对单个数据表进行管理。
     select * from t1;
     
     ```
+    ![img](./imgs/join.png)
 
 * 多表联合
     ```sql
     create table t2 (a VARCHAR(10), b INT(4));
-    insert into t2 values ('Alice', 1.1), ('Bob', 1.2);
+    insert into t2 values ('Alice', 11), ('Bob', 22);
     select * from t1, t2;  
     ```
+    ![img](./imgs/join2.png)
+
 
 * 报错信息
     ```sql
@@ -153,11 +405,21 @@ Table模块负责对单个数据表进行管理。
     select c from t1;
     select * from t1;
     ```
+    ![img](./imgs/error.png)
 
 * 退出(请使用`exit`命令退出)
     ```sql
     drop database db;
     exit;
     ```
+    ![img](./imgs/bye.png)
 
 ### 6. 总结
+
+本次项目实现了一个支持基础语法的完整可用的数据库系统，对于关系型数据库的底层结构和一些概念都有了更深理解，同时对于MySQL等数据库的使用也更加熟练，受益匪浅。
+
+### 7. 参考资料
+* RedBase  [<a>https://web.stanford.edu/class/cs346/2015/redbase.html</a>]
+* DBNoC  [<a>https://github.com/RecursionSheep/DBNoC</a>]
+* UselessDatabase  [<a>https://github.com/Konano/UselessDatabase</a>]
+

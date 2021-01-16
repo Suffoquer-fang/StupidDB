@@ -472,7 +472,8 @@ class Table {
         }
         bool ret = checkPrimaryKey(pData, fh);
         if(!ret) {
-            cout << "ERROR: Multiple Primary Key" << endl;
+            ErrorHandler::instance().set_error_code(RC::ERROR_PRIMARYKEY_CONFLICT);
+            return false;
         }
         return ret;
     }

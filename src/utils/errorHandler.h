@@ -59,15 +59,15 @@ class ErrorHandler {
             } else if(error_code == RC::ERROR_PRIMARYKEY_WRONG_PKNAME) {
                 ret = "Primary Key '" + args[0] + "' Not Exists In Table '" + args[1] + "'";
             } else if(error_code == RC::ERROR_PRIMARYKEY_CONFLICT) {
-                ret = "Primary Key Values " + args[0] + " Already Exists";
+                ret = "Primary Key Values Already Exists";
             } else if(error_code == RC::ERROR_TYPE_NOT_MATCH) {
-                ret = "Type Not Match For Column '"+ args[0] +"', Expected '" + args[1] + "' Found '" + args[2] + "'";
+                ret = "Type Not Match For Column '"+ args[0] +"', Expected '" + args[1] + "', Found '" + args[2] + "'";
             } else if(error_code == RC::ERROR_STRING_TOO_LONG) {
                 ret = "String Too Long For Column '" + args[0] + "', Max Length: " + args[1];
             } else if(error_code == RC::ERROR_COLUMN_NUM_NOT_MATCH) {
-                ret = "Column Num Not Match, Expected " + args[0] + " Found " + args[1];
+                ret = "Column Num Not Match, Expected " + args[0] + ", Found " + args[1];
             } else if(error_code == RC::ERROR_FOREIGNKEY_CONFLICT) {
-                ret = "Foreign Key Conflict, Values Not Exist In Reference Table " + args[0];
+                ret = "Foreign Key Conflict, Values Not Exist In Reference Table '" + args[0] + "'";
             } else if(error_code == RC::ERROR_INDEX_ALREADY_EXIST) {
                 ret = "Index '" + args[0] + "' Already Exists";
             } else if(error_code == RC::ERROR_DROP_REF_COLUMN) {
@@ -78,6 +78,10 @@ class ErrorHandler {
                 ret = "Foreign Key '" + args[0] + "' Already Exists"; 
             } else if(error_code == RC::ERROR_FOREIGNKEY_NOT_EXIST) {
                 ret = "Foreign Key '" + args[0] + "' Not Exists"; 
+            } else if(error_code == RC::ERROR_ATTRLEN_NOT_MATCH) {
+                ret = "Column Length Not Match, Expected " + args[0] + ", Found " + args[1];
+            } else if(error_code == RC::ERROR_REF_NOT_PRIMARY) {
+                ret = "Reference Column In Table '" +args[0] + "' Not Primary Key";
             }
             else {
                 ret = "UNKNOWN ERROR";

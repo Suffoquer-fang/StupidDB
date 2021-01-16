@@ -389,14 +389,25 @@ class QL_QueryManager {
             return;
         }
         if(!selector.isSelectAll) {
-            for(int i = 0; i < selector.colList.size(); ++i)
-                modifyCol(selector.colList[i], tableList);
+            for(int i = 0; i < selector.colList.size(); ++i) {
+                if(!modifyCol(selector.colList[i], tableList)) {
+                    FormatPrinter::printError();
+                    return;
+                }
+            }
         }
 
         for(int i = 0; i < whereClauseList.size(); ++i) {
-            modifyCol(whereClauseList[i].col, tableList);
+
+            if(!modifyCol(whereClauseList[i].col, tableList)) {
+                FormatPrinter::printError();
+                return;
+            }
             if(!whereClauseList[i].expr.isValue)
-                modifyCol(whereClauseList[i].expr.col, tableList);
+                if(!modifyCol(whereClauseList[i].expr.col, tableList)) {
+                    FormatPrinter::printError();
+                    return;
+                }
         }
 
 
@@ -580,8 +591,16 @@ class QL_QueryManager {
         
     }
     void dropIndex(string idxName) {
+        bool ret = false;
         for(auto table: sm->dbConfig.tableVec) {
-            alterDropIndex(table.tableName, idxName);
+            ret |= sm->dropIndex(table.tableName, idxName);
+        }
+        if(ret) {
+            FormatPrinter::success();
+            FormatPrinter::info("Drop Index ");
+            FormatPrinter::quoteString(idxName);
+            FormatPrinter::info(" On All Tables");
+            FormatPrinter::endline();
         }
     }
     void alterAddIndex(string tableName, string idxName, vector<ColInfo> colList) {
@@ -589,6 +608,7 @@ class QL_QueryManager {
     }
     void alterDropIndex(string tableName, string idxName) {
         bool ret = sm->dropIndex(tableName, idxName);
+        FormatPrinter::printError();
         if(ret) {
             FormatPrinter::success();
             FormatPrinter::info("Drop Index ");
@@ -715,26 +735,27 @@ class QL_QueryManager {
 
     }
     void alterAddForeignKey(string tableName, string fkName, vector<ColInfo> colList, string refTableName, vector<ColInfo> refColList, bool print = true) {
-        sm->add
+        bool ret = sm->addForeignKey(tableName, fkName, colList, refTableName, refColList);
+        FormatPrinter::printError();
+        if(ret && print) {
+            FormatPrinter::success();
+            FormatPrinter::info("Add Foreign Key ");
+            FormatPrinter::quoteString(fkName);
+            FormatPrinter::info(" On Table ");
+            FormatPrinter::quoteString(tableName);
+            FormatPrinter::endline();
+        }
     }
     void alterDropForeignKey(string tableName, string fkName) {
-        int tableID = sm->findTable(tableName);
-        if(tableID == -1) {
-            cout << "ERROR: Table '" << tableName << "' not Exists" << endl;
-            return;
+        bool ret = sm->dropForeignKey(tableName, fkName);
+        if(ret) {
+            FormatPrinter::success();
+            FormatPrinter::info("Drop Foreign Key ");
+            FormatPrinter::quoteString(fkName);
+            FormatPrinter::info(" On Table ");
+            FormatPrinter::quoteString(tableName);
+            FormatPrinter::endline();
         }
-        Table& table = sm->dbConfig.tableVec[tableID];
-        for(int i = 0; i < table.fkNameVec.size(); ++i) {
-            if(table.fkNameVec[i] == fkName) {
-                table.fkNameVec.erase(table.fkNameVec.begin() + i);
-                table.foreignKeyVec.erase(table.foreignKeyVec.begin() + i);
-                table.refTableVec.erase(table.refTableVec.begin() + i);
-                table.refColVec.erase(table.refColVec.begin() + i);
-                return;
-            }
-        }
-        cout << "ERROR: Foreign Key '" << fkName << "' Not Exists" << endl;
-        return;
     }
 
     bool checkForeignKey(string tableName, char* pData) {
@@ -848,6 +869,11 @@ class QL_QueryManager {
 
         for(int i = 0; i < tableList.size(); ++i) {
             int tableID = sm->findTable(tableList[i].tableName);
+            if(tableID == -1) {
+                ErrorHandler::instance().set_error_code(RC::ERROR_TABLE_NOT_EXIST);
+                ErrorHandler::instance().push_arg(tableList[i].tableName);
+                return false;
+            }
             Table &temp = sm->dbConfig.tableVec[tableID];
             int attrID = temp.findAttr(col.colName);
             if(attrID != -1) {
@@ -855,6 +881,8 @@ class QL_QueryManager {
                 return true;
             }
         }
+        ErrorHandler::instance().set_error_code(RC::ERROR_COLUMN_NOT_EXIST);
+        ErrorHandler::instance().push_arg(col.colName);
         return false;
     }
 
