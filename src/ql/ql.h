@@ -31,6 +31,8 @@ class QL_QueryManager {
     }
 
     void showDatabases() {
+	if(isInDB)
+            chdir("..");
         const char *rootDir = "./";
         FormatPrinter::set_blue();
         FormatPrinter::instance().setLineWidth(10);
@@ -50,6 +52,8 @@ class QL_QueryManager {
              }
          }
         closedir(dir);
+	if(isInDB)
+            chdir(curDB.c_str());
         FormatPrinter::instance().printHeaderLine();
         FormatPrinter::success();
         FormatPrinter::info("Show Database");
@@ -66,6 +70,9 @@ class QL_QueryManager {
         outfile << 0;
         outfile.close();
         chdir("..");
+	if (isInDB) {
+            chdir(curDB.c_str());
+        }
         FormatPrinter::success();
         FormatPrinter::info("Create Database ");
         FormatPrinter::quoteString(dbName);
